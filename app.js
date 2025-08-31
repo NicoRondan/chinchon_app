@@ -202,75 +202,190 @@
       function renderTable(focusNew = false, focusCol = 0) {
         normalizeRoundsArr();
         const tbody = document.getElementById("tableBody");
-        let totals = getTotals();
-        tbody.innerHTML = "";
-        let isDisabled = gameOver;
+        const playerCount = getPlayerCount();
+        const isDisabled = gameOver;
+
+        function createInputCell(rowIdx, colIdx, value, disable) {
+          const td = document.createElement("td");
+          td.className = "px-2 py-2";
+          td.dataset.col = colIdx;
+          const input = document.createElement("input");
+          input.type = "number";
+          input.min = "0";
+          input.value = value;
+          input.className = `w-16 md:w-20 px-1 py-1 border rounded text-center bg-gray-50 focus:ring-2 focus:ring-blue-400 transition ${
+            disable ? "disabled-input" : ""
+          }`;
+          input.dataset.row = rowIdx;
+          input.dataset.col = colIdx;
+          if (disable) input.disabled = true;
+          input.addEventListener("input", (e) =>
+            handleInput(rowIdx, colIdx, e.target.value)
+          );
+          input.addEventListener("focus", handleInputFocusBlur);
+          input.addEventListener("blur", handleInputBlur);
+          td.appendChild(input);
+          return td;
+        }
 
         for (let i = 0; i < roundsArr.length; i++) {
-          let tds = "";
-          for (let j = 0; j < getPlayerCount(); j++) {
-            const value = roundsArr[i][j] !== undefined ? roundsArr[i][j] : "";
-            const disableInput = isPlayerDisabled(j);
+          const round = roundsArr[i];
+          let tr = tbody.querySelector(`tr[data-row='${i}']`);
+          if (!tr) {
+            tr = document.createElement("tr");
+            tr.dataset.row = i;
+            tr.className = `fade-enter ${isDisabled ? "disabled-row" : ""}`;
+            const fragment = document.createDocumentFragment();
 
-            tds += `<td class="px-2 py-2">
-        <input type="number" min="0"
-          value="${value}"
-          class="w-16 md:w-20 px-1 py-1 border rounded text-center bg-gray-50 focus:ring-2 focus:ring-blue-400 transition ${
-            disableInput ? "disabled-input" : ""
-          }"
-          data-row="${i}" data-col="${j}"
-          ${disableInput ? "disabled" : ""}
-        >
-      </td>`;
+            const controlTd = document.createElement("td");
+            controlTd.className =
+              "px-2 py-2 flex items-center justify-center gap-2";
+            const span = document.createElement("span");
+            span.textContent = i + 1;
+            const btn = document.createElement("button");
+            btn.dataset.idx = i;
+            btn.title = "Eliminar ronda";
+            btn.className =
+              "remove-round bg-red-100 hover:bg-red-300 text-red-700 rounded-full p-1 transition ml-2";
+            btn.style.fontSize = "1rem";
+            btn.innerHTML =
+              '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M9.293 7.293a1 1 0 011.414 0L12 8.586l1.293-1.293a1 1 0 111.414 1.414L13.414 10l1.293 1.293a1 1 0 01-1.414 1.414L12 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L10.586 10l-1.293-1.293a1 1 0 010-1.414z"/></svg>';
+            btn.addEventListener("click", () =>
+              removeRound(parseInt(btn.dataset.idx))
+            );
+            controlTd.appendChild(span);
+            controlTd.appendChild(btn);
+            fragment.appendChild(controlTd);
+
+            for (let j = 0; j < playerCount; j++) {
+              const value = round[j] !== undefined ? round[j] : "";
+              fragment.appendChild(
+                createInputCell(i, j, value, isPlayerDisabled(j))
+              );
+            }
+
+            tr.appendChild(fragment);
+            const addRowRef = tbody.querySelector("tr.add-round-row");
+            tbody.insertBefore(tr, addRowRef);
+            setTimeout(() => tr.classList.add("fade-enter-active"), 15);
+          } else {
+            tr.dataset.row = i;
+            tr.classList.toggle("disabled-row", isDisabled);
+            const span = tr.querySelector("td span");
+            if (span) span.textContent = i + 1;
+            const btn = tr.querySelector("button.remove-round");
+            if (btn) btn.dataset.idx = i;
+            for (let j = 0; j < playerCount; j++) {
+              const value = round[j] !== undefined ? round[j] : "";
+              let td = tr.querySelector(`td[data-col='${j}']`);
+              if (!td) {
+                td = createInputCell(i, j, value, isPlayerDisabled(j));
+                tr.appendChild(td);
+              } else {
+                const input = td.querySelector("input");
+                input.value = value;
+                const disabled = isPlayerDisabled(j);
+                input.disabled = disabled;
+                input.classList.toggle("disabled-input", disabled);
+                input.dataset.row = i;
+                input.dataset.col = j;
+              }
+            }
+            tr.querySelectorAll("td[data-col]").forEach((td) => {
+              const col = parseInt(td.dataset.col);
+              if (col >= playerCount) td.remove();
+            });
           }
-          tbody.innerHTML += `
-      <tr class="fade-enter ${isDisabled ? "disabled-row" : ""}">
-        <td class="px-2 py-2 flex items-center justify-center gap-2">
-          <span>${i + 1}</span>
-          <button data-idx="${i}" title="Eliminar ronda" class="remove-round bg-red-100 hover:bg-red-300 text-red-700 rounded-full p-1 transition ml-2" style="font-size: 1rem;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M9.293 7.293a1 1 0 011.414 0L12 8.586l1.293-1.293a1 1 0 111.414 1.414L13.414 10l1.293 1.293a1 1 0 01-1.414 1.414L12 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L10.586 10l-1.293-1.293a1 1 0 010-1.414z"/></svg>
-          </button>
-        </td>
-        ${tds}
-      </tr>`;
         }
-        // Nueva ronda (solo si el juego sigue)
-        if (!isDisabled) {
-          let tds = "";
-          for (let j = 0; j < getPlayerCount(); j++) {
-            tds += `<td class="px-2 py-2">
-          <input type="number" min="0"
-            value=""
-            class="w-16 md:w-20 px-1 py-1 border rounded text-center opacity-60 bg-gray-100 focus:ring-2 focus:ring-blue-400 transition"
-            placeholder="Nueva..."
-            data-row="new" data-col="${j}"
-          >
-        </td>`;
+
+        tbody.querySelectorAll("tr[data-row]").forEach((tr) => {
+          const idx = parseInt(tr.dataset.row);
+          if (idx >= roundsArr.length) tr.remove();
+        });
+
+        let addRow = tbody.querySelector("tr.add-round-row");
+        if (isDisabled) {
+          if (addRow) addRow.remove();
+        } else {
+          if (!addRow) {
+            addRow = document.createElement("tr");
+            addRow.className = "add-round-row";
+            const labelTd = document.createElement("td");
+            labelTd.className =
+              "px-2 py-2 text-blue-400 text-xs cursor-pointer";
+            labelTd.textContent = "+ nueva";
+            addRow.appendChild(labelTd);
+            const fragment = document.createDocumentFragment();
+            for (let j = 0; j < playerCount; j++) {
+              const td = document.createElement("td");
+              td.className = "px-2 py-2";
+              const input = document.createElement("input");
+              input.type = "number";
+              input.min = "0";
+              input.value = "";
+              input.className =
+                "w-16 md:w-20 px-1 py-1 border rounded text-center opacity-60 bg-gray-100 focus:ring-2 focus:ring-blue-400 transition";
+              input.placeholder = "Nueva...";
+              input.dataset.row = "new";
+              input.dataset.col = j;
+              input.addEventListener("keydown", (e) => handleNewRowKey(e, j));
+              input.addEventListener("click", () => addRoundOnIntent(j));
+              input.addEventListener("focus", () => {
+                addRoundOnIntent(j);
+                handleInputFocusBlur();
+              });
+              input.addEventListener("blur", handleInputBlur);
+              td.appendChild(input);
+              fragment.appendChild(td);
+            }
+            addRow.appendChild(fragment);
+            tbody.appendChild(addRow);
+            addRow.addEventListener("click", () => addRoundOnIntent(0));
+          } else {
+            const existingInputs = addRow.querySelectorAll("input[data-col]");
+            for (let j = existingInputs.length; j < playerCount; j++) {
+              const td = document.createElement("td");
+              td.className = "px-2 py-2";
+              const input = document.createElement("input");
+              input.type = "number";
+              input.min = "0";
+              input.value = "";
+              input.className =
+                "w-16 md:w-20 px-1 py-1 border rounded text-center opacity-60 bg-gray-100 focus:ring-2 focus:ring-blue-400 transition";
+              input.placeholder = "Nueva...";
+              input.dataset.row = "new";
+              input.dataset.col = j;
+              input.addEventListener("keydown", (e) => handleNewRowKey(e, j));
+              input.addEventListener("click", () => addRoundOnIntent(j));
+              input.addEventListener("focus", () => {
+                addRoundOnIntent(j);
+                handleInputFocusBlur();
+              });
+              input.addEventListener("blur", handleInputBlur);
+              td.appendChild(input);
+              addRow.appendChild(td);
+            }
+            existingInputs.forEach((input) => {
+              const col = parseInt(input.dataset.col);
+              if (col >= playerCount) input.parentElement.remove();
+            });
           }
-          tbody.innerHTML += `
-        <tr class="add-round-row" data-col="0">
-          <td class="px-2 py-2 text-blue-400 text-xs cursor-pointer">+ nueva</td>
-          ${tds}
-        </tr>`;
         }
+
         setTimeout(() => {
-          document.querySelectorAll(".fade-enter").forEach((row) => {
-            row.classList.add("fade-enter-active");
-          });
           if (focusNew) {
-            const newRowIndex = roundsArr.length - 1; // El índice de la última ronda (la que se acaba de añadir)
-            const inp = document.querySelector(
-              `input[data-row='${newRowIndex}'][data-col='${focusCol}']`
+            const newRowIndex = roundsArr.length - 1;
+            const inp = tbody.querySelector(
+              `tr[data-row='${newRowIndex}'] input[data-col='${focusCol}']`
             );
             if (inp) {
               inp.focus();
               inp.select();
             }
           }
-          // Animación de enganche
           if (engancheAnimQueue.length) {
             engancheAnimQueue.forEach((i) => {
-              let tds = document.querySelectorAll(`#totalRow td`);
+              const tds = document.querySelectorAll(`#totalRow td`);
               if (tds[i + 1]) {
                 tds[i + 1].classList.add("enganchado-flash");
                 setTimeout(
@@ -284,43 +399,6 @@
         }, 15);
         renderTotalRow();
         renderWinner();
-        attachTableEvents();
-      }
-
-      function attachTableEvents() {
-        document
-          .querySelectorAll('#tableBody input[data-row]')
-          .forEach((inp) => {
-            const row = inp.dataset.row;
-            const col = parseInt(inp.dataset.col);
-            if (row === 'new') {
-              inp.addEventListener('keydown', (e) => handleNewRowKey(e, col));
-              inp.addEventListener('click', () => addRoundOnIntent(col));
-              inp.addEventListener('focus', () => {
-                addRoundOnIntent(col);
-                handleInputFocusBlur();
-              });
-              inp.addEventListener('blur', handleInputBlur);
-            } else {
-              inp.addEventListener('input', (e) =>
-                handleInput(parseInt(row), col, e.target.value)
-              );
-              inp.addEventListener('focus', handleInputFocusBlur);
-              inp.addEventListener('blur', handleInputBlur);
-            }
-          });
-        document
-          .querySelectorAll('#tableBody button.remove-round')
-          .forEach((btn) => {
-            btn.addEventListener('click', () =>
-              removeRound(parseInt(btn.dataset.idx))
-            );
-          });
-        document
-          .querySelectorAll('#tableBody tr.add-round-row')
-          .forEach((tr) => {
-            tr.addEventListener('click', () => addRoundOnIntent(0));
-          });
       }
 
       function renderTotalRow() {
