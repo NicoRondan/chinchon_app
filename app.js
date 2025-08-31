@@ -15,28 +15,43 @@
 
       function loadFromLS() {
         try {
-          const data = JSON.parse(localStorage.getItem(LS_KEY));
-          if (!data) return;
+          const raw = localStorage.getItem(LS_KEY);
+          if (!raw) return;
+          const data = JSON.parse(raw);
           playerNames = data.playerNames || playerNames;
           roundsArr = data.roundsArr || roundsArr;
           manualEnganches = data.manualEnganches || [];
           gameOver = data.gameOver || false;
           winnerIndex = data.winnerIndex ?? null;
           enganches = data.enganches || [];
-        } catch (e) {}
+        } catch (e) {
+          console.error("loadFromLS error", e);
+          showNotif(
+            "No se pudo cargar el almacenamiento local. Usando memoria.",
+            "bg-red-600"
+          );
+        }
       }
       function saveToLS() {
-        localStorage.setItem(
-          LS_KEY,
-          JSON.stringify({
-            playerNames,
-            roundsArr,
-            manualEnganches,
-            enganches,
-            gameOver,
-            winnerIndex,
-          })
-        );
+        try {
+          localStorage.setItem(
+            LS_KEY,
+            JSON.stringify({
+              playerNames,
+              roundsArr,
+              manualEnganches,
+              enganches,
+              gameOver,
+              winnerIndex,
+            })
+          );
+        } catch (e) {
+          console.error("saveToLS error", e);
+          showNotif(
+            "No se pudo guardar en el almacenamiento local.",
+            "bg-red-600"
+          );
+        }
       }
 
       function showNotif(msg, color = "bg-green-600") {
