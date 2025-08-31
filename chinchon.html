@@ -22,22 +22,24 @@
       <button
         id="addPlayerBtn"
         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition"
+        aria-label="Añadir jugador"
       >
         Añadir Jugador
       </button>
       <button
         id="resetScoresBtn"
         class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded transition"
+        aria-label="Reiniciar puntajes"
       >
         Reiniciar Puntajes
       </button>
     </div>
     <div id="winnerMsg" class="hidden"></div>
     <div class="overflow-x-auto w-full max-w-3xl mx-auto">
-      <table class="min-w-max w-full border bg-white rounded shadow text-sm">
+      <table role="table" class="min-w-max w-full border bg-white rounded shadow text-sm">
         <thead>
           <tr id="playerHeaders">
-            <th class="px-2 py-2 bg-blue-600 text-white">Ronda</th>
+            <th scope="col" class="px-2 py-2 bg-blue-600 text-white">Ronda</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>

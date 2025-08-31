@@ -116,17 +116,17 @@
       function renderHeader() {
         const headerRow = document.getElementById("playerHeaders");
         headerRow.innerHTML =
-          '<th class="px-2 py-2 bg-blue-600 text-white">Ronda</th>';
+          '<th scope="col" class="px-2 py-2 bg-blue-600 text-white">Ronda</th>';
         playerNames.forEach((name, i) => {
           headerRow.innerHTML += `
-          <th class="bg-blue-600 text-white px-2 py-2 group whitespace-nowrap ${
+          <th scope="col" class="bg-blue-600 text-white px-2 py-2 group whitespace-nowrap ${
             isManualEnganchado(i) ? "enganchado" : ""
           }">
             <div class="flex items-center gap-1 justify-center">
               <span class="editable cursor-pointer hover:underline" data-idx="${i}">${escapeHtml(
             name
           )}</span>
-              <button data-idx="${i}" title="Eliminar jugador" class="remove-player bg-red-100 hover:bg-red-300 text-red-700 rounded-full p-1 transition" style="font-size: 1rem;">
+              <button data-idx="${i}" title="Eliminar jugador" aria-label="Eliminar jugador" class="remove-player bg-red-100 hover:bg-red-300 text-red-700 rounded-full p-1 transition" style="font-size: 1rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M9.293 7.293a1 1 0 011.414 0L12 8.586l1.293-1.293a1 1 0 111.414 1.414L13.414 10l1.293 1.293a1 1 0 01-1.414 1.414L12 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L10.586 10l-1.293-1.293a1 1 0 010-1.414z"/></svg>
               </button>
             </div>
@@ -227,12 +227,17 @@
           const input = document.createElement("input");
           input.type = "number";
           input.min = "0";
+          input.inputMode = "numeric";
           input.value = value;
           input.className = `w-16 md:w-20 px-1 py-1 border rounded text-center bg-gray-50 focus:ring-2 focus:ring-blue-400 transition ${
             disable ? "disabled-input" : ""
           }`;
           input.dataset.row = rowIdx;
           input.dataset.col = colIdx;
+          input.setAttribute(
+            "aria-label",
+            `Puntaje de ${playerNames[colIdx]} en ronda ${rowIdx + 1}`
+          );
           if (disable) input.disabled = true;
           input.addEventListener("input", (e) =>
             handleInput(rowIdx, colIdx, e.target.value)
@@ -260,6 +265,7 @@
             const btn = document.createElement("button");
             btn.dataset.idx = i;
             btn.title = "Eliminar ronda";
+            btn.setAttribute("aria-label", "Eliminar ronda");
             btn.className =
               "remove-round bg-red-100 hover:bg-red-300 text-red-700 rounded-full p-1 transition ml-2";
             btn.style.fontSize = "1rem";
@@ -337,6 +343,7 @@
               const input = document.createElement("input");
               input.type = "number";
               input.min = "0";
+              input.inputMode = "numeric";
               input.value = "";
               input.className =
                 "w-16 md:w-20 px-1 py-1 border rounded text-center opacity-60 bg-gray-100 focus:ring-2 focus:ring-blue-400 transition";
@@ -364,6 +371,7 @@
               const input = document.createElement("input");
               input.type = "number";
               input.min = "0";
+              input.inputMode = "numeric";
               input.value = "";
               input.className =
                 "w-16 md:w-20 px-1 py-1 border rounded text-center opacity-60 bg-gray-100 focus:ring-2 focus:ring-blue-400 transition";
@@ -428,7 +436,7 @@
         <span>${totals[i]}</span>
         ${
           puedeEnganchar
-            ? `<button class="enganchar-btn ml-2 px-2 py-1 bg-yellow-500 text-white text-xs rounded animate-fadein" data-idx="${i}">Enganchar</button>`
+            ? `<button class="enganchar-btn ml-2 px-2 py-1 bg-yellow-500 text-white text-xs rounded animate-fadein" data-idx="${i}" aria-label="Enganchar a ${escapeHtml(playerNames[i])}">Enganchar</button>`
             : ""
         }
       </td>`;
