@@ -1,3 +1,15 @@
+/**
+ * Simple micro-benchmark comparing the previous table-rendering strategy
+ * (string concatenation and innerHTML replacement) with the new incremental
+ * DOM update approach. It simulates a scoreboard with many players and rounds,
+ * repeatedly updating a single cell to measure rendering cost.
+ *
+ * Run with:
+ *   node benchmark.js
+ *
+ * Adjust the `players`, `rounds` and `updates` constants below to stress the
+ * routines with different sizes.
+ */
 const { performance } = require('perf_hooks');
 
 const players = 8;
