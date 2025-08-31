@@ -1,1 +1,98 @@
 /* Compiled Tailwind CSS will be placed here. Run the compilation steps in README.md to regenerate. */
+      .fade-enter {
+        opacity: 0;
+        transform: scale(0.95);
+        transition: all 0.3s;
+      }
+      .fade-enter-active {
+        opacity: 1;
+        transform: scale(1);
+      }
+      .animate-fadein {
+        animation: fadein 0.7s cubic-bezier(0.22, 0.68, 0, 1.71);
+      }
+      @keyframes fadein {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .disabled-input {
+        background: #e5e7eb !important;
+        cursor: not-allowed !important;
+      }
+      .sticky-total {
+        position: fixed !important;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 30;
+        box-shadow: 0 -4px 16px #0001;
+        width: 100vw;
+        max-width: 700px;
+        margin: 0 auto;
+      }
+      .sticky-ghost-row {
+        height: 56px;
+      }
+      .enganchado {
+        background: #fde68a !important;
+        transition: background 0.5s;
+      }
+      .enganchado-flash {
+        animation: enganche-flash 1s cubic-bezier(0.82, -0.04, 0.35, 1.12);
+      }
+      @keyframes enganche-flash {
+        0% {
+          background: #ffe066;
+        }
+        40% {
+          background: #fff700;
+        }
+        75% {
+          background: #fce588;
+        }
+        100% {
+          background: #fde68a;
+        }
+      }
+      .pozo-badge {
+        font-size: 1.2rem;
+      }
+      .winner-badge {
+        font-size: 1.25rem;
+        background: #4ade80;
+        color: #134e23;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        margin: 1.2rem 0;
+      }
+      .disabled-row {
+        pointer-events: none;
+        opacity: 0.65;
+      }
+      /* Sticky header para mobile */
+      @media (max-width: 700px) {
+        thead tr th {
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          background: #2563eb;
+          color: white;
+        }
+        .sticky-total {
+          position: fixed !important;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 30;
+          width: 100vw;
+          max-width: 700px;
+          margin: 0 auto;
+          box-shadow: 0 -4px 16px #0001;
+        }
+      }
