@@ -6,7 +6,7 @@ Todo corre en el navegador; los datos de las partidas se guardan en
 
 ## Uso
 
-1. Abre `chinchon.html` en un navegador moderno.
+1. Abre `index.html` en un navegador moderno.
 2. Agrega jugadores, carga las rondas y la aplicación calculará los totales
    automáticamente.
 3. Los valores se guardan de manera local, por lo que puedes cerrar y volver a
@@ -14,17 +14,9 @@ Todo corre en el navegador; los datos de las partidas se guardan en
 
 ## Compilación de Tailwind
 
-Para actualizar `styles.css` con las clases usadas en `chinchon.html`:
-
-1. Asegúrate de tener Node.js instalado.
-2. Ejecuta en la raíz del proyecto:
-   ```bash
-   npx tailwindcss -i tailwind.css -o styles.css --minify
-   ```
-
-El archivo `tailwind.config.js` ya apunta a `chinchon.html`, por lo que solo se
-generarán las clases necesarias. Recuerda reinstalar dependencias si es la
-primera vez que compilas.
+El archivo `tailwind.config.js` ya apunta a los HTML de la raíz, por lo que
+solo se generarán las clases necesarias. Recuerda reinstalar dependencias si es
+la primera vez que compilas.
 
 ## Benchmark de renderizado
 
