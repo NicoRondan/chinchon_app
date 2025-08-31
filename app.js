@@ -489,6 +489,8 @@
         inputEl.focus();
         inputEl.select();
 
+      }
+
       function savePlayerName(input, idx) {
         let value = input.value.trim();
         if (!value) value = `Jugador ${idx + 1}`;
