@@ -1,0 +1,6 @@
+{
+  "name": "Chinchón",
+  "short_name": "Chinchón",
+  "start_url": "./index.html",
+  "display": "standalone"
+}
