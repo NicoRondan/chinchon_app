@@ -193,7 +193,11 @@
 
       function showNotif(msg, color = "bg-green-600") {
         const notif = document.getElementById("notif");
-        notif.innerHTML = `<div class="rounded shadow-lg ${color} text-white px-6 py-2 mb-2 animate-fadein flex items-center gap-2 text-base">${msg}</div>`;
+        const div = document.createElement("div");
+        div.className = `rounded shadow-lg ${color} text-white px-6 py-2 mb-2 animate-fadein flex items-center gap-2 text-base`;
+        div.textContent = msg;
+        notif.innerHTML = "";
+        notif.appendChild(div);
         setTimeout(() => (notif.innerHTML = ""), 1100);
       }
       function escapeHtml(str) {
@@ -664,7 +668,9 @@
         renderTable();
 
         showNotif(
-          `${playerNames[idx]} enganchado al puntaje de ${playerNames[ref]}.`,
+          `${escapeHtml(playerNames[idx])} enganchado al puntaje de ${escapeHtml(
+            playerNames[ref]
+          )}.`,
           "bg-yellow-600"
         );
         saveToLS();
@@ -688,7 +694,7 @@
             gameOver = true;
             winnerIndex = winnerIdx_;
             showNotif(
-              `${playerNames[winnerIdx_]} es el ganador!`,
+              `${escapeHtml(playerNames[winnerIdx_])} es el ganador!`,
               "bg-green-700"
             );
             renderTable();
@@ -699,7 +705,7 @@
           gameOver = true;
           winnerIndex = vivos[0];
           showNotif(
-            `¡${playerNames[winnerIndex]} es el ganador!`,
+            `¡${escapeHtml(playerNames[winnerIndex])} es el ganador!`,
             "bg-green-700"
           );
           renderTable();
