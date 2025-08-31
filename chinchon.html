@@ -537,6 +537,19 @@
           return;
         }
         roundsArr.splice(idx, 1);
+        manualEnganches = manualEnganches
+          .filter((e) => e.round !== idx)
+          .map((e) => ({ ...e, round: e.round > idx ? e.round - 1 : e.round }));
+        enganches = enganches
+          .filter((e) => e.round !== idx)
+          .map((e) => ({ ...e, round: e.round > idx ? e.round - 1 : e.round }));
+        if (Array.isArray(ultimoEnganche)) {
+          ultimoEnganche = ultimoEnganche.map((r) => {
+            if (r === null || r === undefined) return r;
+            if (r === idx) return null;
+            return r > idx ? r - 1 : r;
+          });
+        }
         renderTable();
         showNotif("Ronda eliminada", "bg-red-600");
         saveToLS();
