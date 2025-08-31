@@ -156,7 +156,6 @@
       let lastTotals = [];
       let gameOver = false;
       let winnerIndex = null;
-      let ultimoEnganche = [];
       let enganches = []; // { idx, round, ref, total }
 
       const isManualEnganchado = (idx) =>
@@ -171,8 +170,6 @@
           manualEnganches = data.manualEnganches || [];
           gameOver = data.gameOver || false;
           winnerIndex = data.winnerIndex ?? null;
-          ultimoEnganche =
-            data.ultimoEnganche || Array(playerNames.length).fill(null);
           enganches = data.enganches || [];
         } catch (e) {}
       }
@@ -186,7 +183,6 @@
             enganches,
             gameOver,
             winnerIndex,
-            ultimoEnganche,
           })
         );
       }
@@ -245,11 +241,7 @@
       function getJugadoresVivos() {
         const totals = getTotals();
         return playerNames
-          .map((_, i) =>
-            totals[i] <= 100 || (ultimoEnganche[i] !== null && totals[i] <= 100)
-              ? i
-              : null
-          )
+          .map((_, i) => (totals[i] <= 100 ? i : null))
           .filter((i) => i !== null);
       }
 
@@ -325,14 +317,6 @@
         if (totals[i] > 100 && !puedeEngancharAhora) return true;
 
         return false; // resto de los casos
-      }
-
-      function puedeRevivir(i) {
-        // Si el jugador tiene un enganche en la ronda actual y su total ≤100, puede seguir
-        if (!ultimoEnganche[i]) return false;
-        const totals = getTotals();
-        // El jugador revivió si bajó el total tras engancharse
-        return totals[i] <= 100;
       }
 
       function normalizeRoundsArr() {
@@ -438,7 +422,7 @@
         renderWinner();
       }
 
-      function renderTotalRow(value) {
+      function renderTotalRow() {
         const tfootRow = document.getElementById("totalRow");
         let totals = getTotals();
         tfootRow.innerHTML = `<td class="px-2 py-2 text-blue-900">Total</td>`;
@@ -543,13 +527,6 @@
         enganches = enganches
           .filter((e) => e.round !== idx)
           .map((e) => ({ ...e, round: e.round > idx ? e.round - 1 : e.round }));
-        if (Array.isArray(ultimoEnganche)) {
-          ultimoEnganche = ultimoEnganche.map((r) => {
-            if (r === null || r === undefined) return r;
-            if (r === idx) return null;
-            return r > idx ? r - 1 : r;
-          });
-        }
         renderTable();
         showNotif("Ronda eliminada", "bg-red-600");
         saveToLS();
@@ -578,7 +555,6 @@
           for (let i = 0; i < getPlayerCount(); i++) ronda[i] = "";
         });
         manualEnganches = [];
-        ultimoEnganche = Array(getPlayerCount()).fill(null);
         gameOver = false;
         winnerIndex = null;
         enganches = [];
