@@ -199,6 +199,9 @@ body {
 .highlight-row {
   background-color: #fef9c3;
 }
+.highlight-row td:first-child span {
+  color: #000;
+}
 .highlight-col {
   background-color: #dbeafe !important;
 }
