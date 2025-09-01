@@ -1,10 +1,8 @@
-function findEngancheRef(totals, idx, enganches = []) {
-  const enganchados = new Set(enganches.map((e) => e.idx));
+function findEngancheRef(totals, idx) {
   let ref = -1;
   let max = -Infinity;
   for (let i = 0; i < totals.length; i++) {
     if (i === idx) continue;
-    if (enganchados.has(i)) continue;
     const t = totals[i];
     if (t <= 100 && t > max) {
       max = t;
@@ -829,7 +827,7 @@ if (typeof module !== "undefined") {
       function handleEnganchar(idx) {
         if (gameOver) return;
         const totals = getTotals();
-        const { ref, total: refTotal } = findEngancheRef(totals, idx, enganches);
+        const { ref, total: refTotal } = findEngancheRef(totals, idx);
 
         if (ref === -1) {
           showNotif("No hay jugadores a los que enganchar.", "bg-red-700");
