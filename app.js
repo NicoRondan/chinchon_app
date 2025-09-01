@@ -9,6 +9,7 @@
       let gameOver = false;
       let winnerIndex = null;
       let enganches = []; // { idx, round, ref, total }
+      let saveTimeout;
 
       const isManualEnganchado = (idx) =>
         manualEnganches.some((e) => e.idx === idx);
@@ -52,6 +53,16 @@
             "bg-red-600"
           );
         }
+      }
+
+      function debouncedSave() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveToLS, 300);
+      }
+
+      function saveNow() {
+        clearTimeout(saveTimeout);
+        saveToLS();
       }
 
       function showNotif(msg, color = "bg-green-600") {
@@ -478,7 +489,7 @@
 
         renderTable(true, col);
         showNotif("Ronda añadida", "bg-blue-600");
-        saveToLS();
+        saveNow();
       }
 
       function handleNewRowKey(e, col) {
@@ -496,7 +507,7 @@
         if (getTotals()[playerIdx] > 100 && !shouldShowEnganchar(playerIdx)) {
           renderTable();
         }
-        saveToLS();
+        debouncedSave();
       }
 
       function addPlayer() {
@@ -507,7 +518,7 @@
         renderTable();
         updateAllTotals();
         showNotif("Jugador añadido", "bg-blue-600");
-        saveToLS();
+        saveNow();
       }
 
       function removePlayer(index) {
@@ -524,7 +535,7 @@
         renderTable();
         updateAllTotals();
         showNotif("Jugador eliminado", "bg-red-600");
-        saveToLS();
+        saveNow();
       }
       function removeRound(idx) {
         if (roundsArr.length <= 1) {
@@ -540,7 +551,7 @@
           .map((e) => ({ ...e, round: e.round > idx ? e.round - 1 : e.round }));
         renderTable();
         showNotif("Ronda eliminada", "bg-red-600");
-        saveToLS();
+        saveNow();
       }
 
       function updateTotal(playerIdx) {
@@ -558,7 +569,7 @@
           "Pozo: $" + calcularPozo();
         lastTotals = getTotals();
         syncStickyTotals();
-        saveToLS();
+        saveNow();
       }
 
       function resetScores() {
@@ -573,7 +584,7 @@
         renderTable();
         updateAllTotals();
         showNotif("Puntajes reiniciados", "bg-gray-600");
-        saveToLS();
+        saveNow();
       }
 
       function editPlayerName(idx) {
@@ -600,7 +611,7 @@
         renderTable();
         updateAllTotals();
         showNotif("Nombre actualizado", "bg-green-700");
-        saveToLS();
+        saveNow();
       }
 
       function getTotalsRaw() {
@@ -675,7 +686,7 @@
           )}.`,
           "bg-yellow-600"
         );
-        saveToLS();
+        saveNow();
       }
       // --- Ganador: siempre chequear si solo queda 1 jugador vivo
       function checkGameEnd() {
@@ -701,7 +712,7 @@
             );
             renderTable();
             renderWinner();
-            saveToLS();
+            saveNow();
           }
         } else if (vivos.length === 1 && !gameOver) {
           gameOver = true;
@@ -712,7 +723,7 @@
           );
           renderTable();
           renderWinner();
-          saveToLS();
+          saveNow();
         }
       }
 
