@@ -24,6 +24,14 @@ function registerPlugin(app) {
       if (pre) pre.textContent = JSON.stringify(e.data);
     });
   };
+
+  if (typeof document !== 'undefined') {
+    const btn = document.getElementById('tvBtn');
+    if (btn) {
+      btn.style.display = 'inline-block';
+      btn.addEventListener('click', () => app.openTv());
+    }
+  }
 }
 if (typeof module !== 'undefined') {
   module.exports = { registerPlugin };

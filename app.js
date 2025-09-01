@@ -1104,21 +1104,6 @@ if (typeof module !== "undefined") {
           .getElementById("nextDealerBtn")
           .addEventListener("click", nextDealer);
 
-        const voiceBtn = document.getElementById("voiceBtn");
-        if (voiceBtn && game.startVoiceInput) {
-          voiceBtn.style.display = "inline-block";
-          voiceBtn.addEventListener("click", () => game.startVoiceInput());
-        }
-        const tvBtn = document.getElementById("tvBtn");
-        if (tvBtn && game.openTv) {
-          tvBtn.style.display = "inline-block";
-          tvBtn.addEventListener("click", () => game.openTv());
-        }
-        const watchBtn = document.getElementById("watchBtn");
-        if (watchBtn && game.openWatch) {
-          watchBtn.style.display = "inline-block";
-          watchBtn.addEventListener("click", () => game.openWatch());
-        }
 
         let deferredPrompt;
         window.addEventListener("beforeinstallprompt", (e) => {

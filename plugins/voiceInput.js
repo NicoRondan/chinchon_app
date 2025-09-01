@@ -19,6 +19,13 @@ function registerPlugin(app) {
         app.addScore(match[1], parseInt(match[2], 10));
       }
     };
+    if (typeof document !== 'undefined') {
+      const btn = document.getElementById('voiceBtn');
+      if (btn) {
+        btn.style.display = 'inline-block';
+        btn.addEventListener('click', () => app.startVoiceInput());
+      }
+    }
     return;
   }
 
@@ -43,6 +50,14 @@ function registerPlugin(app) {
   };
 
   app.startVoiceInput = () => recognition.start();
+
+  if (typeof document !== 'undefined') {
+    const btn = document.getElementById('voiceBtn');
+    if (btn) {
+      btn.style.display = 'inline-block';
+      btn.addEventListener('click', () => app.startVoiceInput());
+    }
+  }
 }
 
 if (typeof module !== 'undefined') {

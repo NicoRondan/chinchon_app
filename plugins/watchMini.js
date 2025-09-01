@@ -18,6 +18,14 @@ function registerPlugin(app) {
     });
     win.document.body.appendChild(btn);
   };
+
+  if (typeof document !== 'undefined') {
+    const btn = document.getElementById('watchBtn');
+    if (btn) {
+      btn.style.display = 'inline-block';
+      btn.addEventListener('click', () => app.openWatch());
+    }
+  }
 }
 if (typeof module !== 'undefined') {
   module.exports = { registerPlugin };
