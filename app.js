@@ -13,8 +13,28 @@ function findEngancheRef(totals, idx) {
   return { ref, total };
 }
 
+// Sencilla arquitectura de plugins. Cada módulo puede registrarse pasando
+// un objeto `app` con estado y banderas de característica. Los plugins se
+// añaden con `game.registerPlugin(plugin)` donde cada `plugin` exporta una
+// función `registerPlugin(app)`.
+const game = {
+  features: {},
+  plugins: [],
+  registerPlugin(plugin) {
+    if (plugin && typeof plugin.registerPlugin === "function") {
+      plugin.registerPlugin(game);
+      this.plugins.push(plugin);
+    }
+  },
+};
+
+// Exponer en navegador para uso desde otras capas.
+if (typeof window !== "undefined") {
+  window.game = game;
+}
+
 if (typeof module !== "undefined") {
-  module.exports = { findEngancheRef };
+  module.exports = { findEngancheRef, game };
 }
 
       // ======= STATE & STORAGE =======
