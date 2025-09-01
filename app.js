@@ -275,15 +275,22 @@ if (typeof module !== "undefined") {
       }
 
       function shouldShowEnganchar(i, currentRound = getCurrentRoundIndex()) {
-        if (gameOver || getPlayerCount() <= 2) return false;
-
         const totals = getTotals();
-        if (totals[i] <= 100) return false; // no está pasado
-
         const lastRound = getLastRoundPlayed(i);
-        if (lastRound === -1) return false; // nunca jugó
 
-        return currentRound === lastRound + 1 && !isManualEnganchado(i);
+        const isBusted = totals[i] > 100; // está pasado
+        const hasPlayed = lastRound !== -1; // ya jugó
+        const nextRound = currentRound === lastRound + 1; // ronda siguiente
+        const notEngaged = !isManualEnganchado(i); // no está enganchado manualmente
+
+        return (
+          !gameOver &&
+          getPlayerCount() > 2 &&
+          isBusted &&
+          hasPlayed &&
+          nextRound &&
+          notEngaged
+        );
       }
 
       function calcularPozo() {
