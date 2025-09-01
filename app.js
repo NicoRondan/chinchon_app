@@ -32,6 +32,8 @@ if (typeof module !== "undefined") {
       let saveTimeout;
       let dealerIndex = 0;
       let lastDealerRound = -1;
+      let history = [];
+      let historyIndex = -1;
 
       // References to DOM rows and cells to avoid repeated queries
       const rowRefs = [];
@@ -123,6 +125,62 @@ if (typeof module !== "undefined") {
         } else {
           showNotif("Acción cancelada", "bg-gray-600");
         }
+      }
+
+      function logEvent(desc, time = new Date().toLocaleString()) {
+        const logDiv = document.getElementById("roundLog");
+        if (logDiv) {
+          const entry = document.createElement("div");
+          entry.textContent = `[${time}] ${desc}`;
+          logDiv.appendChild(entry);
+        }
+      }
+
+      function updateHistoryButtons() {
+        const undoBtn = document.getElementById("undoBtn");
+        const redoBtn = document.getElementById("redoBtn");
+        if (undoBtn) undoBtn.disabled = historyIndex <= 0;
+        if (redoBtn) redoBtn.disabled = historyIndex >= history.length - 1;
+      }
+
+      function pushHistory(desc) {
+        const snapshot = {
+          rounds: JSON.parse(JSON.stringify(roundsArr)),
+          totals: getTotals().slice(),
+          desc,
+          time: new Date().toLocaleString(),
+        };
+        if (historyIndex < history.length - 1) {
+          history = history.slice(0, historyIndex + 1);
+        }
+        history.push(snapshot);
+        historyIndex = history.length - 1;
+        updateHistoryButtons();
+        logEvent(desc, snapshot.time);
+      }
+
+      function applySnapshot(snap) {
+        roundsArr = JSON.parse(JSON.stringify(snap.rounds));
+        renderHeader();
+        renderTable();
+        updateAllTotals();
+        saveNow();
+      }
+
+      function undo() {
+        if (historyIndex <= 0) return;
+        historyIndex--;
+        applySnapshot(history[historyIndex]);
+        logEvent(`Deshacer: ${history[historyIndex].desc}`);
+        updateHistoryButtons();
+      }
+
+      function redo() {
+        if (historyIndex >= history.length - 1) return;
+        historyIndex++;
+        applySnapshot(history[historyIndex]);
+        logEvent(`Rehacer: ${history[historyIndex].desc}`);
+        updateHistoryButtons();
       }
       function escapeHtml(str) {
         return str.replace(/[&<>\"']/g, function (tag) {
@@ -681,6 +739,7 @@ if (typeof module !== "undefined") {
           renderTable();
         } else if (currentRound !== prevRound) {
           renderTable();
+          pushHistory(`Ronda ${prevRound + 1} completada`);
         }
         checkDealerRotation();
         debouncedSave();
@@ -1041,6 +1100,7 @@ if (typeof module !== "undefined") {
         lastDealerRound = getCurrentRoundIndex() - 1;
         renderHeader();
         renderTable();
+        pushHistory("Estado inicial");
         document
           .getElementById("addPlayerBtn")
           .addEventListener("click", addPlayer);
@@ -1050,6 +1110,12 @@ if (typeof module !== "undefined") {
         document
           .getElementById("nextDealerBtn")
           .addEventListener("click", nextDealer);
+        document
+          .getElementById("undoBtn")
+          .addEventListener("click", undo);
+        document
+          .getElementById("redoBtn")
+          .addEventListener("click", redo);
 
         let deferredPrompt;
         window.addEventListener("beforeinstallprompt", (e) => {
