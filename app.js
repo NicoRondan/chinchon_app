@@ -36,7 +36,6 @@ if (typeof module !== "undefined") {
       // References to DOM rows and cells to avoid repeated queries
       const rowRefs = [];
       const cellRefs = [];
-      let addRowRef = null;
       let addRowInputs = [];
 
       const isManualEnganchado = (idx) =>
@@ -327,6 +326,7 @@ if (typeof module !== "undefined") {
         const playerCount = getPlayerCount();
         const isDisabled = gameOver;
         const currentRound = getCurrentRoundIndex();
+        let addRowRef = tbody.querySelector("tr.add-round-row");
 
         function createInputCell(rowIdx, colIdx, value, disable) {
           const td = document.createElement("td");
@@ -496,12 +496,13 @@ if (typeof module !== "undefined") {
               });
               input.addEventListener("blur", handleInputBlur);
               td.appendChild(input);
-              addRowRef.appendChild(td);
-              addRowInputs[j] = input;
-            }
-            tbody.appendChild(addRowRef);
-            addRowRef.addEventListener("click", () => addRoundOnIntent(0));
-          } else {
+            addRowRef.appendChild(td);
+            addRowInputs[j] = input;
+          }
+          tbody.appendChild(addRowRef);
+          addRowRef = tbody.querySelector("tr.add-round-row");
+          addRowRef.addEventListener("click", () => addRoundOnIntent(0));
+        } else {
             for (let j = 0; j < playerCount; j++) {
               let input = addRowInputs[j];
               if (!input) {
