@@ -18,7 +18,7 @@ function findEngancheRef(totals, idx) {
 // añaden con `game.registerPlugin(plugin)` donde cada `plugin` exporta una
 // función `registerPlugin(app)`.
 const game = {
-  features: {},
+  features: { voiceInput: true, tvScoreboard: true, watchMini: true },
   plugins: [],
   registerPlugin(plugin) {
     if (plugin && typeof plugin.registerPlugin === "function") {
@@ -28,8 +28,12 @@ const game = {
   },
 };
 
-// Exponer en navegador para uso desde otras capas.
+// Exponer en navegador para uso desde otras capas y manejar flags
 if (typeof window !== "undefined") {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("voice") === "false") game.features.voiceInput = false;
+  if (params.get("tv") === "false") game.features.tvScoreboard = false;
+  if (params.get("watch") === "false") game.features.watchMini = false;
   window.game = game;
 }
 
@@ -52,6 +56,8 @@ if (typeof module !== "undefined") {
       let saveTimeout;
       let dealerIndex = 0;
       let lastDealerRound = -1;
+
+      Object.defineProperty(game, "players", { get: () => playerNames });
 
       // References to DOM rows and cells to avoid repeated queries
       const rowRefs = [];
@@ -209,6 +215,18 @@ if (typeof module !== "undefined") {
           }
           return sum;
         });
+      }
+
+      game.getState = () => ({
+        players: [...playerNames],
+        rounds: roundsArr.map((r) => [...r]),
+        totals: getTotals(),
+      });
+
+      function broadcastState() {
+        if (game.broadcastScoreboard) {
+          game.broadcastScoreboard(game.getState());
+        }
       }
 
       function getProgress(i, totals = getTotals()) {
@@ -706,6 +724,19 @@ if (typeof module !== "undefined") {
         debouncedSave();
       }
 
+      game.addScore = (playerName, points) => {
+        const idx = playerNames.findIndex(
+          (n) => n.toLowerCase() === playerName.toLowerCase()
+        );
+        if (idx === -1) return;
+        const round = getCurrentRoundIndex();
+        if (!roundsArr[round]) {
+          roundsArr.push(Array(getPlayerCount()).fill(""));
+        }
+        const current = +roundsArr[round][idx] || 0;
+        handleInput(round, idx, current + points);
+      };
+
       function addPlayer() {
         if (gameOver) return;
         playerNames.push(`Jugador ${playerNames.length + 1}`);
@@ -798,6 +829,7 @@ if (typeof module !== "undefined") {
         );
         if (fill) fill.style.width = `${getProgress(playerIdx, totals) * 100}%`;
         syncStickyTotals();
+        broadcastState();
       }
 
       function updateAllTotals() {
@@ -815,6 +847,7 @@ if (typeof module !== "undefined") {
           if (fill) fill.style.width = `${getProgress(i, lastTotals) * 100}%`;
         });
         syncStickyTotals();
+        broadcastState();
         saveNow();
       }
 
@@ -1070,6 +1103,22 @@ if (typeof module !== "undefined") {
         document
           .getElementById("nextDealerBtn")
           .addEventListener("click", nextDealer);
+
+        const voiceBtn = document.getElementById("voiceBtn");
+        if (voiceBtn && game.startVoiceInput) {
+          voiceBtn.style.display = "inline-block";
+          voiceBtn.addEventListener("click", () => game.startVoiceInput());
+        }
+        const tvBtn = document.getElementById("tvBtn");
+        if (tvBtn && game.openTv) {
+          tvBtn.style.display = "inline-block";
+          tvBtn.addEventListener("click", () => game.openTv());
+        }
+        const watchBtn = document.getElementById("watchBtn");
+        if (watchBtn && game.openWatch) {
+          watchBtn.style.display = "inline-block";
+          watchBtn.addEventListener("click", () => game.openWatch());
+        }
 
         let deferredPrompt;
         window.addEventListener("beforeinstallprompt", (e) => {

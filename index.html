@@ -69,6 +69,30 @@
       >
         Instalar
       </button>
+      <button
+        id="voiceBtn"
+        class="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded transition"
+        style="display: none"
+        aria-label="Entrada por voz"
+      >
+        Voz
+      </button>
+      <button
+        id="tvBtn"
+        class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition"
+        style="display: none"
+        aria-label="Abrir TV"
+      >
+        TV
+      </button>
+      <button
+        id="watchBtn"
+        class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded transition"
+        style="display: none"
+        aria-label="Abrir reloj"
+      >
+        Watch +1
+      </button>
     </div>
     <div id="winnerMsg" class="hidden"></div>
     <div class="overflow-x-auto w-full max-w-3xl mx-auto">
@@ -87,6 +111,9 @@
       </table>
     </div>
     <script src="app.js" defer></script>
+    <script src="plugins/voiceInput.js" defer></script>
+    <script src="plugins/tvScoreboard.js" defer></script>
+    <script src="plugins/watchMini.js" defer></script>
     <div id="totalStickyBar" style="display: none"></div>
     <script>
       if ('serviceWorker' in navigator) {

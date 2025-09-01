@@ -25,5 +25,10 @@ function registerPlugin(app) {
     });
   };
 }
+if (typeof module !== 'undefined') {
+  module.exports = { registerPlugin };
+}
 
-module.exports = { registerPlugin };
+if (typeof window !== 'undefined' && window.game) {
+  window.game.registerPlugin({ registerPlugin });
+}

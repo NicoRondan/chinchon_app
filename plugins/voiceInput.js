@@ -45,4 +45,10 @@ function registerPlugin(app) {
   app.startVoiceInput = () => recognition.start();
 }
 
-module.exports = { registerPlugin };
+if (typeof module !== 'undefined') {
+  module.exports = { registerPlugin };
+}
+
+if (typeof window !== 'undefined' && window.game) {
+  window.game.registerPlugin({ registerPlugin });
+}

@@ -19,5 +19,10 @@ function registerPlugin(app) {
     win.document.body.appendChild(btn);
   };
 }
+if (typeof module !== 'undefined') {
+  module.exports = { registerPlugin };
+}
 
-module.exports = { registerPlugin };
+if (typeof window !== 'undefined' && window.game) {
+  window.game.registerPlugin({ registerPlugin });
+}
