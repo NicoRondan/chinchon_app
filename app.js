@@ -114,6 +114,16 @@
         return "#000";
       }
 
+      function shadeHsl(hsl, delta) {
+        const match = hsl.match(/\d+/g);
+        if (match && match.length >= 3) {
+          let l = parseInt(match[2], 10) + delta;
+          l = Math.max(0, Math.min(100, l));
+          return `hsl(${match[0]}, ${match[1]}%, ${l}%)`;
+        }
+        return hsl;
+      }
+
       function getPlayerCount() {
         return playerNames.length;
       }
@@ -481,6 +491,8 @@
           let puedeEnganchar = shouldShowEnganchar(i);
           const textColor = getContrastColor(playerColors[i]);
           const progress = getProgress(i, totals);
+          const barBg = shadeHsl(playerColors[i], 20);
+          const barFill = shadeHsl(playerColors[i], -10);
           tfootRow.innerHTML += `<td data-col="${i}" class="px-2 py-2 font-semibold ${
             isManualEnganchado(i) ? "enganchado" : ""
           }" style="background-color:${playerColors[i]};color:${textColor};">
@@ -494,8 +506,8 @@
             : ""
         }
       </div>
-      <div class="progress-bg" style="background-color:rgba(0,0,0,0.2);">
-        <div class="progress-fill" style="width:${progress * 100}%;background-color:${playerColors[i]};"></div>
+      <div class="progress-bg" style="background-color:${barBg};">
+        <div class="progress-fill" style="width:${progress * 100}%;background-color:${barFill};"></div>
       </div>
     </td>`;
         }
