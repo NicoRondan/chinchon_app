@@ -1,3 +1,21 @@
+function findEngancheRef(totals, idx) {
+  let ref = -1;
+  let max = -Infinity;
+  for (let i = 0; i < totals.length; i++) {
+    if (i === idx) continue;
+    const t = totals[i];
+    if (t <= 100 && t > max) {
+      max = t;
+      ref = i;
+    }
+  }
+  return { ref, total: ref >= 0 ? max : 0 };
+}
+
+if (typeof module !== "undefined") {
+  module.exports = { findEngancheRef };
+}
+
       // ======= STATE & STORAGE =======
       const LS_KEY = "chinchon_data_v3";
       let playerNames = ["Jugador 1", "Jugador 2"];
@@ -809,21 +827,12 @@
       function handleEnganchar(idx) {
         if (gameOver) return;
         const totals = getTotals();
-        const vivos = playerNames
-          // Incluye enganchados previos: podrían tener el puntaje más alto
-          .map((_, i) => (i !== idx && totals[i] <= 100 ? i : null))
-          .filter((i) => i !== null);
+        const { ref, total: refTotal } = findEngancheRef(totals, idx);
 
-        if (vivos.length === 0) {
+        if (ref === -1) {
           showNotif("No hay jugadores a los que enganchar.", "bg-red-700");
           return;
         }
-
-        const ref = vivos.reduce(
-          (best, i) => (totals[i] > totals[best] ? i : best),
-          vivos[0]
-        );
-        const refTotal = totals[ref];
 
         let rondaParaRegistrarEnganche = -1;
         let hayRondasExistentesSinPuntajeParaEsteJugador = false;
@@ -976,57 +985,69 @@
           }
         }, 100);
       }
-      window.addEventListener("resize", () => {
-        if (isStickyTotal && window.innerWidth > 600) enableStickyTotal(false);
-      });
+      if (typeof window !== "undefined") {
+        window.addEventListener("resize", () => {
+          if (isStickyTotal && window.innerWidth > 600) enableStickyTotal(false);
+        });
 
-      document.addEventListener("focusin", (e) => {
-        if (e.target.tagName === "INPUT" && window.innerWidth < 800) {
-          enableStickyTotal(true);
-          // Oculta el tfoot original:
-          document.querySelector("tfoot").style.visibility = "hidden";
-        }
-      });
-      document.addEventListener("focusout", (e) => {
-        if (e.target.tagName === "INPUT") {
-          setTimeout(() => {
-            if (
-              !document.activeElement ||
-              document.activeElement.tagName !== "INPUT"
-            ) {
-              enableStickyTotal(false);
-              document.querySelector("tfoot").style.visibility = "";
-            }
-          }, 100);
-        }
-      });
+        document.addEventListener("focusin", (e) => {
+          if (e.target.tagName === "INPUT" && window.innerWidth < 800) {
+            enableStickyTotal(true);
+            // Oculta el tfoot original:
+            document.querySelector("tfoot").style.visibility = "hidden";
+          }
+        });
+        document.addEventListener("focusout", (e) => {
+          if (e.target.tagName === "INPUT") {
+            setTimeout(() => {
+              if (
+                !document.activeElement ||
+                document.activeElement.tagName !== "INPUT"
+              ) {
+                enableStickyTotal(false);
+                document.querySelector("tfoot").style.visibility = "";
+              }
+            }, 100);
+          }
+        });
 
-      // Inicializar desde LS o default
-      loadFromLS();
-      const vivosInit = getJugadoresVivos();
-      if (vivosInit.length && !vivosInit.includes(dealerIndex)) {
-        dealerIndex = vivosInit[0];
+        // Inicializar desde LS o default
+        loadFromLS();
+        const vivosInit = getJugadoresVivos();
+        if (vivosInit.length && !vivosInit.includes(dealerIndex)) {
+          dealerIndex = vivosInit[0];
+        }
+        lastDealerRound = getCurrentRoundIndex() - 1;
+        renderHeader();
+        renderTable();
+        document
+          .getElementById("addPlayerBtn")
+          .addEventListener("click", addPlayer);
+        document
+          .getElementById("resetScoresBtn")
+          .addEventListener("click", resetScores);
+        document
+          .getElementById("nextDealerBtn")
+          .addEventListener("click", nextDealer);
+
+        let deferredPrompt;
+        window.addEventListener("beforeinstallprompt", (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+          const installBtn = document.getElementById("installBtn");
+          if (installBtn) {
+            installBtn.style.display = "inline-block";
+            installBtn.addEventListener(
+              "click",
+              () => {
+                installBtn.style.display = "none";
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.finally(() => {
+                  deferredPrompt = null;
+                });
+              },
+              { once: true }
+            );
+          }
+        });
       }
-      lastDealerRound = getCurrentRoundIndex() - 1;
-      renderHeader();
-      renderTable();
-      document.getElementById("addPlayerBtn").addEventListener("click", addPlayer);
-      document.getElementById("resetScoresBtn").addEventListener("click", resetScores);
-      document.getElementById("nextDealerBtn").addEventListener("click", nextDealer);
-
-      let deferredPrompt;
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        const installBtn = document.getElementById("installBtn");
-        if (installBtn) {
-          installBtn.style.display = "inline-block";
-          installBtn.addEventListener("click", () => {
-            installBtn.style.display = "none";
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.finally(() => {
-              deferredPrompt = null;
-            });
-          }, { once: true });
-        }
-      });
