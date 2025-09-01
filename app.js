@@ -1,15 +1,16 @@
 function findEngancheRef(totals, idx) {
-  let ref = -1;
-  let max = -Infinity;
-  for (let i = 0; i < totals.length; i++) {
-    if (i === idx) continue;
-    const t = totals[i];
-    if (t <= 100 && t > max) {
-      max = t;
-      ref = i;
-    }
+  const candidates = totals
+    .map((t, i) => ({ i, t }))
+    .filter(({ i }) => i !== idx)
+    .filter(({ t }) => Number.isFinite(t) && t <= 100)
+    .sort((a, b) => b.t - a.t);
+
+  if (!candidates.length) {
+    return { ref: -1, total: 0 };
   }
-  return { ref, total: ref >= 0 ? max : 0 };
+
+  const { i: ref, t: total } = candidates[0];
+  return { ref, total };
 }
 
 if (typeof module !== "undefined") {
