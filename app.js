@@ -293,22 +293,16 @@ if (typeof module !== "undefined") {
 
       function isPlayerDisabled(i, currentRound = getCurrentRoundIndex()) {
         const totals = getTotals();
-        const enganchado = isManualEnganchado(i);
+        const isBusted = totals[i] > 100;
 
         if (gameOver) return true; // partida terminada
+        if (!isBusted) return false; // no superó los 100
 
-        /* 1.  Ya enganchado, y sigue arriba de 100 –– queda fuera hasta revivir */
-        if (enganchado && totals[i] > 100) return true;
+        // superó 100 y está enganchado: se mantiene bloqueado
+        if (isManualEnganchado(i)) return true;
 
-        const puedeEngancharAhora = shouldShowEnganchar(i, currentRound);
-
-        /* 2.  Si AÚN puede engancharse (botón visible) => NO se bloquea   */
-        if (totals[i] > 100 && puedeEngancharAhora) return false;
-
-        /* 3. Pasó los 100 y ya perdió la chance => se bloquea            */
-        if (totals[i] > 100 && !puedeEngancharAhora) return true;
-
-        return false; // resto de los casos
+        // superó 100: se bloquea si ya no puede engancharse
+        return !shouldShowEnganchar(i, currentRound);
       }
 
       function normalizeRoundsArr() {
