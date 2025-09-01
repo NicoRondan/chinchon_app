@@ -805,19 +805,10 @@
         saveNow();
       }
 
-      function getTotalsRaw() {
-        return playerNames.map((_, i) =>
-          roundsArr.reduce(
-            (acc, ronda) => acc + (isFinite(ronda[i]) ? Number(ronda[i]) : 0),
-            0
-          )
-        );
-      }
-
       // ============= ENGANCHE Y GAME END ============
       function handleEnganchar(idx) {
         if (gameOver) return;
-        const totalsAntesDelEnganche = getTotalsRaw();
+        const totals = getTotals();
         const vivos = getJugadoresVivos().filter((i) => i !== idx);
 
         if (vivos.length === 0) {
@@ -825,16 +816,11 @@
           return;
         }
 
-        const ref = vivos
-          .map((i) => ({ i, t: totalsAntesDelEnganche[i] }))
-          .sort((a, b) => b.t - a.t)[0].i;
-        const refTotal = getTotals()[ref];
-
-        let engancheRound = roundsArr.findIndex(
-          (ronda, rIdx) =>
-            (ronda[idx] === "" || ronda[idx] === undefined) &&
-            rIdx < roundsArr.length - 1
+        const ref = vivos.reduce(
+          (best, i) => (totals[i] > totals[best] ? i : best),
+          vivos[0]
         );
+        const refTotal = totals[ref];
 
         let rondaParaRegistrarEnganche = -1;
         let hayRondasExistentesSinPuntajeParaEsteJugador = false;
