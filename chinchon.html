@@ -34,6 +34,29 @@
         Reiniciar Puntajes
       </button>
       <button
+        id="nextDealerBtn"
+        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition"
+        aria-label="Siguiente mano"
+      >
+        Siguiente mano
+      </button>
+      <button
+        id="undoBtn"
+        class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded transition"
+        aria-label="Deshacer"
+        disabled
+      >
+        Deshacer
+      </button>
+      <button
+        id="redoBtn"
+        class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded transition"
+        aria-label="Rehacer"
+        disabled
+      >
+        Rehacer
+      </button>
+      <button
         id="installBtn"
         class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition"
         style="display: none"
@@ -58,7 +81,11 @@
         </tfoot>
       </table>
     </div>
-    <script src="app.js"></script>
+    <div
+      id="roundLog"
+      class="mt-4 w-full max-w-3xl mx-auto text-sm"
+    ></div>
+    <script src="app.js" defer></script>
     <div id="totalStickyBar" style="display: none"></div>
   </body>
 </html>
