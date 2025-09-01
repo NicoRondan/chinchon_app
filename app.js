@@ -1,3 +1,22 @@
+function findEngancheRef(totals, idx) {
+  const candidates = totals
+    .map((t, i) => ({ i, t }))
+    .filter(({ i }) => i !== idx)
+    .filter(({ t }) => Number.isFinite(t) && t <= 100)
+    .sort((a, b) => b.t - a.t);
+
+  if (!candidates.length) {
+    return { ref: -1, total: 0 };
+  }
+
+  const { i: ref, t: total } = candidates[0];
+  return { ref, total };
+}
+
+if (typeof module !== "undefined") {
+  module.exports = { findEngancheRef };
+}
+
       // ======= STATE & STORAGE =======
       const LS_KEY = "chinchon_data_v3";
       let playerNames = ["Jugador 1", "Jugador 2"];
@@ -13,6 +32,12 @@
       let saveTimeout;
       let dealerIndex = 0;
       let lastDealerRound = -1;
+
+      // References to DOM rows and cells to avoid repeated queries
+      const rowRefs = [];
+      const cellRefs = [];
+      let addRowRef = null;
+      let addRowInputs = [];
 
       const isManualEnganchado = (idx) =>
         manualEnganches.some((e) => e.idx === idx);
@@ -339,11 +364,13 @@
 
         for (let i = 0; i < roundsArr.length; i++) {
           const round = roundsArr[i];
-          let tr = tbody.querySelector(`tr[data-row='${i}']`);
+          let tr = rowRefs[i];
           if (!tr) {
             tr = document.createElement("tr");
             tr.dataset.row = i;
             tr.className = `fade-enter ${isDisabled ? "disabled-row" : ""}`;
+            rowRefs[i] = tr;
+            cellRefs[i] = [];
             const fragment = document.createDocumentFragment();
 
             const controlTd = document.createElement("td");
@@ -369,36 +396,44 @@
 
             for (let j = 0; j < playerCount; j++) {
               const value = round[j] !== undefined ? round[j] : "";
-              fragment.appendChild(
-                createInputCell(
-                  i,
-                  j,
-                  value,
-                  isPlayerDisabled(j, currentRound) || i > currentRound
-                )
+              const td = createInputCell(
+                i,
+                j,
+                value,
+                isPlayerDisabled(j, currentRound) || i > currentRound
               );
+              fragment.appendChild(td);
+              cellRefs[i][j] = td;
             }
 
             tr.appendChild(fragment);
-            const addRowRef = tbody.querySelector("tr.add-round-row");
-            tbody.insertBefore(tr, addRowRef);
+            if (addRowRef && tbody.contains(addRowRef)) {
+              tbody.insertBefore(tr, addRowRef);
+            } else {
+              tbody.appendChild(tr);
+            }
             setTimeout(() => tr.classList.add("fade-enter-active"), 15);
           } else {
             tr.dataset.row = i;
             tr.classList.toggle("disabled-row", isDisabled);
-            const span = tr.querySelector("td span");
+            const controlTd = tr.children[0];
+            const span = controlTd.children[0];
             if (span) span.textContent = i + 1;
-            const btn = tr.querySelector("button.remove-round");
+            const btn = controlTd.children[1];
             if (btn) btn.dataset.idx = i;
+
+            if (!cellRefs[i]) cellRefs[i] = [];
             for (let j = 0; j < playerCount; j++) {
               const value = round[j] !== undefined ? round[j] : "";
-              let td = tr.querySelector(`td[data-col='${j}']`);
-              const disabled = isPlayerDisabled(j, currentRound) || i > currentRound;
+              const disabled =
+                isPlayerDisabled(j, currentRound) || i > currentRound;
+              let td = cellRefs[i][j];
               if (!td) {
                 td = createInputCell(i, j, value, disabled);
                 tr.appendChild(td);
+                cellRefs[i][j] = td;
               } else {
-                const input = td.querySelector("input");
+                const input = td.firstElementChild;
                 input.value = value;
                 input.disabled = disabled;
                 input.classList.toggle("disabled-input", disabled);
@@ -406,31 +441,37 @@
                 input.dataset.col = j;
               }
             }
-            tr.querySelectorAll("td[data-col]").forEach((td) => {
-              const col = parseInt(td.dataset.col);
-              if (col >= playerCount) td.remove();
-            });
+            for (let j = playerCount; j < cellRefs[i].length; j++) {
+              const td = cellRefs[i][j];
+              if (td && td.parentNode === tr) tr.removeChild(td);
+            }
+            cellRefs[i].length = playerCount;
           }
         }
 
-        tbody.querySelectorAll("tr[data-row]").forEach((tr) => {
-          const idx = parseInt(tr.dataset.row);
-          if (idx >= roundsArr.length) tr.remove();
-        });
+        for (let i = roundsArr.length; i < rowRefs.length; i++) {
+          const tr = rowRefs[i];
+          if (tr && tr.parentNode === tbody) tbody.removeChild(tr);
+        }
+        rowRefs.length = roundsArr.length;
+        cellRefs.length = roundsArr.length;
 
-        let addRow = tbody.querySelector("tr.add-round-row");
         if (isDisabled) {
-          if (addRow) addRow.remove();
+          if (addRowRef && tbody.contains(addRowRef)) {
+            tbody.removeChild(addRowRef);
+          }
+          addRowRef = null;
+          addRowInputs = [];
         } else {
-          if (!addRow) {
-            addRow = document.createElement("tr");
-            addRow.className = "add-round-row";
+          if (!addRowRef) {
+            addRowRef = document.createElement("tr");
+            addRowRef.className = "add-round-row";
             const labelTd = document.createElement("td");
             labelTd.className =
               "px-2 py-2 text-blue-400 text-xs cursor-pointer";
             labelTd.textContent = "+ nueva";
-            addRow.appendChild(labelTd);
-            const fragment = document.createDocumentFragment();
+            addRowRef.appendChild(labelTd);
+            addRowInputs = [];
             for (let j = 0; j < playerCount; j++) {
               const td = document.createElement("td");
               td.className = "px-2 py-2";
@@ -455,63 +496,64 @@
               });
               input.addEventListener("blur", handleInputBlur);
               td.appendChild(input);
-              fragment.appendChild(td);
+              addRowRef.appendChild(td);
+              addRowInputs[j] = input;
             }
-            addRow.appendChild(fragment);
-            tbody.appendChild(addRow);
-            addRow.addEventListener("click", () => addRoundOnIntent(0));
+            tbody.appendChild(addRowRef);
+            addRowRef.addEventListener("click", () => addRoundOnIntent(0));
           } else {
-            const existingInputs = addRow.querySelectorAll("input[data-col]");
-            for (let j = existingInputs.length; j < playerCount; j++) {
-              const td = document.createElement("td");
-              td.className = "px-2 py-2";
-              const input = document.createElement("input");
-              input.type = "number";
-              input.min = "0";
-              input.inputMode = "numeric";
-              input.value = "";
-              input.className =
-                "w-16 md:w-20 px-1 py-1 border rounded text-center opacity-60 bg-gray-100 focus:ring-2 focus:ring-blue-400 transition";
-              input.placeholder = "Nueva...";
-              input.dataset.row = "new";
-              input.dataset.col = j;
-              const disNew = currentRound < roundsArr.length;
-              if (disNew) input.classList.add("disabled-input");
-              input.disabled = disNew;
-              input.addEventListener("keydown", (e) => handleNewRowKey(e, j));
-              input.addEventListener("click", () => addRoundOnIntent(j));
-              input.addEventListener("focus", () => {
-                addRoundOnIntent(j);
-                handleInputFocusBlur();
-              });
-              input.addEventListener("blur", handleInputBlur);
-              td.appendChild(input);
-              addRow.appendChild(td);
-            }
-            existingInputs.forEach((input) => {
-              const col = parseInt(input.dataset.col);
-              if (col >= playerCount) input.parentElement.remove();
+            for (let j = 0; j < playerCount; j++) {
+              let input = addRowInputs[j];
+              if (!input) {
+                const td = document.createElement("td");
+                td.className = "px-2 py-2";
+                input = document.createElement("input");
+                input.type = "number";
+                input.min = "0";
+                input.inputMode = "numeric";
+                input.value = "";
+                input.className =
+                  "w-16 md:w-20 px-1 py-1 border rounded text-center opacity-60 bg-gray-100 focus:ring-2 focus:ring-blue-400 transition";
+                input.placeholder = "Nueva...";
+                input.dataset.row = "new";
+                input.dataset.col = j;
+                input.addEventListener("keydown", (e) => handleNewRowKey(e, j));
+                input.addEventListener("click", () => addRoundOnIntent(j));
+                input.addEventListener("focus", () => {
+                  addRoundOnIntent(j);
+                  handleInputFocusBlur();
+                });
+                input.addEventListener("blur", handleInputBlur);
+                td.appendChild(input);
+                addRowRef.appendChild(td);
+                addRowInputs[j] = input;
+              }
               const disNew = currentRound < roundsArr.length;
               input.disabled = disNew;
               input.classList.toggle("disabled-input", disNew);
-            });
+              input.dataset.col = j;
+            }
+            for (let j = playerCount; j < addRowInputs.length; j++) {
+              const inp = addRowInputs[j];
+              if (inp) inp.parentElement.remove();
+            }
+            addRowInputs.length = playerCount;
           }
         }
 
         setTimeout(() => {
           if (focusNew) {
             const newRowIndex = roundsArr.length - 1;
-            const inp = tbody.querySelector(
-              `tr[data-row='${newRowIndex}'] input[data-col='${focusCol}']`
-            );
+            const inp = cellRefs[newRowIndex]?.[focusCol]?.firstElementChild;
             if (inp) {
               inp.focus();
               inp.select();
             }
           }
           if (engancheAnimQueue.length) {
+            const totalRow = document.getElementById("totalRow");
             engancheAnimQueue.forEach((i) => {
-              const tds = document.querySelectorAll(`#totalRow td`);
+              const tds = totalRow ? totalRow.children : [];
               if (tds[i + 1]) {
                 tds[i + 1].classList.add("enganchado-flash");
                 setTimeout(
@@ -782,36 +824,16 @@
         saveNow();
       }
 
-      function getTotalsRaw() {
-        return playerNames.map((_, i) =>
-          roundsArr.reduce(
-            (acc, ronda) => acc + (isFinite(ronda[i]) ? Number(ronda[i]) : 0),
-            0
-          )
-        );
-      }
-
       // ============= ENGANCHE Y GAME END ============
       function handleEnganchar(idx) {
         if (gameOver) return;
-        const totalsAntesDelEnganche = getTotalsRaw();
-        const vivos = getJugadoresVivos().filter((i) => i !== idx);
+        const totals = getTotals();
+        const { ref, total: refTotal } = findEngancheRef(totals, idx);
 
-        if (vivos.length === 0) {
+        if (ref === -1) {
           showNotif("No hay jugadores a los que enganchar.", "bg-red-700");
           return;
         }
-
-        const ref = vivos
-          .map((i) => ({ i, t: totalsAntesDelEnganche[i] }))
-          .sort((a, b) => b.t - a.t)[0].i;
-        const refTotal = getTotals()[ref];
-
-        let engancheRound = roundsArr.findIndex(
-          (ronda, rIdx) =>
-            (ronda[idx] === "" || ronda[idx] === undefined) &&
-            rIdx < roundsArr.length - 1
-        );
 
         let rondaParaRegistrarEnganche = -1;
         let hayRondasExistentesSinPuntajeParaEsteJugador = false;
@@ -964,57 +986,69 @@
           }
         }, 100);
       }
-      window.addEventListener("resize", () => {
-        if (isStickyTotal && window.innerWidth > 600) enableStickyTotal(false);
-      });
+      if (typeof window !== "undefined") {
+        window.addEventListener("resize", () => {
+          if (isStickyTotal && window.innerWidth > 600) enableStickyTotal(false);
+        });
 
-      document.addEventListener("focusin", (e) => {
-        if (e.target.tagName === "INPUT" && window.innerWidth < 800) {
-          enableStickyTotal(true);
-          // Oculta el tfoot original:
-          document.querySelector("tfoot").style.visibility = "hidden";
-        }
-      });
-      document.addEventListener("focusout", (e) => {
-        if (e.target.tagName === "INPUT") {
-          setTimeout(() => {
-            if (
-              !document.activeElement ||
-              document.activeElement.tagName !== "INPUT"
-            ) {
-              enableStickyTotal(false);
-              document.querySelector("tfoot").style.visibility = "";
-            }
-          }, 100);
-        }
-      });
+        document.addEventListener("focusin", (e) => {
+          if (e.target.tagName === "INPUT" && window.innerWidth < 800) {
+            enableStickyTotal(true);
+            // Oculta el tfoot original:
+            document.querySelector("tfoot").style.visibility = "hidden";
+          }
+        });
+        document.addEventListener("focusout", (e) => {
+          if (e.target.tagName === "INPUT") {
+            setTimeout(() => {
+              if (
+                !document.activeElement ||
+                document.activeElement.tagName !== "INPUT"
+              ) {
+                enableStickyTotal(false);
+                document.querySelector("tfoot").style.visibility = "";
+              }
+            }, 100);
+          }
+        });
 
-      // Inicializar desde LS o default
-      loadFromLS();
-      const vivosInit = getJugadoresVivos();
-      if (vivosInit.length && !vivosInit.includes(dealerIndex)) {
-        dealerIndex = vivosInit[0];
+        // Inicializar desde LS o default
+        loadFromLS();
+        const vivosInit = getJugadoresVivos();
+        if (vivosInit.length && !vivosInit.includes(dealerIndex)) {
+          dealerIndex = vivosInit[0];
+        }
+        lastDealerRound = getCurrentRoundIndex() - 1;
+        renderHeader();
+        renderTable();
+        document
+          .getElementById("addPlayerBtn")
+          .addEventListener("click", addPlayer);
+        document
+          .getElementById("resetScoresBtn")
+          .addEventListener("click", resetScores);
+        document
+          .getElementById("nextDealerBtn")
+          .addEventListener("click", nextDealer);
+
+        let deferredPrompt;
+        window.addEventListener("beforeinstallprompt", (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+          const installBtn = document.getElementById("installBtn");
+          if (installBtn) {
+            installBtn.style.display = "inline-block";
+            installBtn.addEventListener(
+              "click",
+              () => {
+                installBtn.style.display = "none";
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.finally(() => {
+                  deferredPrompt = null;
+                });
+              },
+              { once: true }
+            );
+          }
+        });
       }
-      lastDealerRound = getCurrentRoundIndex() - 1;
-      renderHeader();
-      renderTable();
-      document.getElementById("addPlayerBtn").addEventListener("click", addPlayer);
-      document.getElementById("resetScoresBtn").addEventListener("click", resetScores);
-      document.getElementById("nextDealerBtn").addEventListener("click", nextDealer);
-
-      let deferredPrompt;
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        const installBtn = document.getElementById("installBtn");
-        if (installBtn) {
-          installBtn.style.display = "inline-block";
-          installBtn.addEventListener("click", () => {
-            installBtn.style.display = "none";
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.finally(() => {
-              deferredPrompt = null;
-            });
-          }, { once: true });
-        }
-      });
