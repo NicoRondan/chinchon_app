@@ -12,6 +12,7 @@
       let playerColors = [];
       let saveTimeout;
       let dealerIndex = 0;
+      let lastDealerRound = -1;
 
       const isManualEnganchado = (idx) =>
         manualEnganches.some((e) => e.idx === idx);
@@ -178,6 +179,34 @@
           .filter((i) => i !== null);
       }
 
+      function getLastRoundPlayed(i) {
+        for (let r = roundsArr.length - 1; r >= 0; r--) {
+          if (roundsArr[r][i] !== "" && roundsArr[r][i] !== undefined) return r;
+        }
+        return -1;
+      }
+
+      function isRowComplete(rowIdx, totals = getTotals()) {
+        for (let j = 0; j < getPlayerCount(); j++) {
+          const val = roundsArr[rowIdx][j];
+          if (val !== "" && val !== undefined) continue;
+          if (totals[j] > 100) {
+            const last = getLastRoundPlayed(j);
+            if (rowIdx >= last + 1) continue;
+          }
+          return false;
+        }
+        return true;
+      }
+
+      function getCurrentRoundIndex() {
+        const totals = getTotals();
+        for (let r = 0; r < roundsArr.length; r++) {
+          if (!isRowComplete(r, totals)) return r;
+        }
+        return roundsArr.length;
+      }
+
       // ------ HEADER -----
       function renderHeader() {
         const headerRow = document.getElementById("playerHeaders");
@@ -221,38 +250,23 @@
           });
       }
 
-      function shouldShowEnganchar(i) {
+      function shouldShowEnganchar(i, currentRound = getCurrentRoundIndex()) {
         if (gameOver || getPlayerCount() <= 2) return false;
 
         const totals = getTotals();
         if (totals[i] <= 100) return false; // no está pasado
 
-        /* última ronda donde YA hay puntos para este jugador */
-        let lastRound = -1;
-        for (let r = roundsArr.length - 1; r >= 0; r--) {
-          if (roundsArr[r][i] !== "" && roundsArr[r][i] !== undefined) {
-            lastRound = r;
-            break;
-          }
-        }
+        const lastRound = getLastRoundPlayed(i);
         if (lastRound === -1) return false; // nunca jugó
 
-        /* ¿Hay algún puntaje cargado DESPUÉS de esa ronda?  */
-        for (let r = lastRound + 1; r < roundsArr.length; r++) {
-          if (roundsArr[r][i] !== "" && roundsArr[r][i] !== undefined) {
-            return false; // ya empezó la ronda siguiente → demasiado tarde
-          }
-        }
-
-        /* Pasó de 100 y todavía no escribió nada después: puede engancharse YA */
-        return true;
+        return currentRound === lastRound + 1 && !isManualEnganchado(i);
       }
 
       function calcularPozo() {
         return playerNames.length * 500 + manualEnganches.length * 200;
       }
 
-      function isPlayerDisabled(i) {
+      function isPlayerDisabled(i, currentRound = getCurrentRoundIndex()) {
         const totals = getTotals();
         const enganchado = isManualEnganchado(i);
 
@@ -261,7 +275,7 @@
         /* 1.  Ya enganchado, y sigue arriba de 100 –– queda fuera hasta revivir */
         if (enganchado && totals[i] > 100) return true;
 
-        const puedeEngancharAhora = shouldShowEnganchar(i);
+        const puedeEngancharAhora = shouldShowEnganchar(i, currentRound);
 
         /* 2.  Si AÚN puede engancharse (botón visible) => NO se bloquea   */
         if (totals[i] > 100 && puedeEngancharAhora) return false;
@@ -287,6 +301,7 @@
         const tbody = document.getElementById("tableBody");
         const playerCount = getPlayerCount();
         const isDisabled = gameOver;
+        const currentRound = getCurrentRoundIndex();
 
         function createInputCell(rowIdx, colIdx, value, disable) {
           const td = document.createElement("td");
@@ -355,7 +370,12 @@
             for (let j = 0; j < playerCount; j++) {
               const value = round[j] !== undefined ? round[j] : "";
               fragment.appendChild(
-                createInputCell(i, j, value, isPlayerDisabled(j))
+                createInputCell(
+                  i,
+                  j,
+                  value,
+                  isPlayerDisabled(j, currentRound) || i > currentRound
+                )
               );
             }
 
@@ -373,13 +393,13 @@
             for (let j = 0; j < playerCount; j++) {
               const value = round[j] !== undefined ? round[j] : "";
               let td = tr.querySelector(`td[data-col='${j}']`);
+              const disabled = isPlayerDisabled(j, currentRound) || i > currentRound;
               if (!td) {
-                td = createInputCell(i, j, value, isPlayerDisabled(j));
+                td = createInputCell(i, j, value, disabled);
                 tr.appendChild(td);
               } else {
                 const input = td.querySelector("input");
                 input.value = value;
-                const disabled = isPlayerDisabled(j);
                 input.disabled = disabled;
                 input.classList.toggle("disabled-input", disabled);
                 input.dataset.row = i;
@@ -424,6 +444,9 @@
               input.placeholder = "Nueva...";
               input.dataset.row = "new";
               input.dataset.col = j;
+              const disNew = currentRound < roundsArr.length;
+              if (disNew) input.classList.add("disabled-input");
+              input.disabled = disNew;
               input.addEventListener("keydown", (e) => handleNewRowKey(e, j));
               input.addEventListener("click", () => addRoundOnIntent(j));
               input.addEventListener("focus", () => {
@@ -452,6 +475,9 @@
               input.placeholder = "Nueva...";
               input.dataset.row = "new";
               input.dataset.col = j;
+              const disNew = currentRound < roundsArr.length;
+              if (disNew) input.classList.add("disabled-input");
+              input.disabled = disNew;
               input.addEventListener("keydown", (e) => handleNewRowKey(e, j));
               input.addEventListener("click", () => addRoundOnIntent(j));
               input.addEventListener("focus", () => {
@@ -465,6 +491,9 @@
             existingInputs.forEach((input) => {
               const col = parseInt(input.dataset.col);
               if (col >= playerCount) input.parentElement.remove();
+              const disNew = currentRound < roundsArr.length;
+              input.disabled = disNew;
+              input.classList.toggle("disabled-input", disNew);
             });
           }
         }
@@ -501,9 +530,10 @@
       function renderTotalRow() {
         const tfootRow = document.getElementById("totalRow");
         let totals = getTotals();
+        const currentRound = getCurrentRoundIndex();
         tfootRow.innerHTML = `<td class="px-2 py-2 text-blue-900">Total</td>`;
         for (let i = 0; i < getPlayerCount(); i++) {
-          let puedeEnganchar = shouldShowEnganchar(i);
+          let puedeEnganchar = shouldShowEnganchar(i, currentRound);
           const textColor = getContrastColor(playerColors[i]);
           const progress = getProgress(i, totals);
           const barBg = shadeHsl(playerColors[i], 20);
@@ -553,16 +583,20 @@
       let roundAddedInThisFocus = false;
       function addRoundOnIntent(col) {
         if (roundAddedInThisFocus) return;
+        if (getCurrentRoundIndex() < roundsArr.length) {
+          showNotif("Completa la ronda actual antes de añadir otra", "bg-red-600");
+          return;
+        }
         roundAddedInThisFocus = true;
         setTimeout(() => {
           roundAddedInThisFocus = false;
         }, 100);
 
-        const newRoundIndex = roundsArr.length;
         roundsArr.push(Array(getPlayerCount()).fill(""));
 
         renderTable(true, col);
         showNotif("Ronda añadida", "bg-blue-600");
+        checkDealerRotation();
         saveNow();
       }
 
@@ -578,9 +612,14 @@
         checkGameEnd();
         updateTotal(playerIdx);
         renderTotalRow();
-        if (getTotals()[playerIdx] > 100 && !shouldShowEnganchar(playerIdx)) {
+        const currentRound = getCurrentRoundIndex();
+        if (
+          getTotals()[playerIdx] > 100 &&
+          !shouldShowEnganchar(playerIdx, currentRound)
+        ) {
           renderTable();
         }
+        checkDealerRotation();
         debouncedSave();
       }
 
@@ -589,6 +628,7 @@
         playerNames.push(`Jugador ${playerNames.length + 1}`);
         playerColors.push(generatePastelColor());
         roundsArr.forEach((ronda) => ronda.push(""));
+        lastDealerRound = getCurrentRoundIndex() - 1;
         renderHeader();
         renderTable();
         updateAllTotals();
@@ -601,6 +641,15 @@
         dealerIndex = (dealerIndex + 1) % getPlayerCount();
         renderHeader();
         saveNow();
+      }
+
+      function checkDealerRotation() {
+        const currentRound = getCurrentRoundIndex();
+        const completedRound = currentRound - 1;
+        if (completedRound > lastDealerRound) {
+          lastDealerRound = completedRound;
+          nextDealer();
+        }
       }
 
       function removePlayer(index) {
@@ -621,6 +670,7 @@
             .filter((e) => e.idx !== index)
             .map((e) => ({ ...e, idx: e.idx > index ? e.idx - 1 : e.idx }));
           roundsArr.forEach((ronda) => ronda.splice(index, 1));
+          lastDealerRound = getCurrentRoundIndex() - 1;
           renderHeader();
           renderTable();
           updateAllTotals();
@@ -641,6 +691,7 @@
           enganches = enganches
             .filter((e) => e.round !== idx)
             .map((e) => ({ ...e, round: e.round > idx ? e.round - 1 : e.round }));
+          lastDealerRound = getCurrentRoundIndex() - 1;
           renderTable();
           showNotif("Ronda eliminada", "bg-red-600");
           saveNow();
@@ -689,6 +740,7 @@
           winnerIndex = null;
           enganches = [];
           dealerIndex = 0;
+          lastDealerRound = -1;
           renderHeader();
           renderTable();
           updateAllTotals();
@@ -788,6 +840,7 @@
         if (indiceRondaSiguienteAlEnganche >= roundsArr.length) {
           roundsArr.push(Array(getPlayerCount()).fill(""));
         }
+        lastDealerRound = getCurrentRoundIndex() - 1;
         renderTable();
 
         showNotif(
@@ -932,6 +985,7 @@
 
       // Inicializar desde LS o default
       loadFromLS();
+      lastDealerRound = getCurrentRoundIndex() - 1;
       renderHeader();
       renderTable();
       document.getElementById("addPlayerBtn").addEventListener("click", addPlayer);
