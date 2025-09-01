@@ -2,7 +2,7 @@ function findEngancheRef(totals, idx) {
   const candidates = totals
     .map((t, i) => ({ i, t }))
     .filter(({ i }) => i !== idx)
-    .filter(({ t }) => Number.isFinite(t) && t <= 100)
+    .filter(({ t }) => Number.isFinite(t) && t <= rules.threshold)
     .sort((a, b) => b.t - a.t);
 
   if (!candidates.length) {
@@ -32,6 +32,13 @@ if (typeof module !== "undefined") {
       let saveTimeout;
       let dealerIndex = 0;
       let lastDealerRound = -1;
+      let rules = {
+        threshold: 100,
+        forgiveHundred: false,
+        wildcard: false,
+        extraDecks: false,
+      };
+      let forgivenPlayers = [];
 
       // References to DOM rows and cells to avoid repeated queries
       const rowRefs = [];
@@ -54,6 +61,8 @@ if (typeof module !== "undefined") {
             enganches = data.enganches || [];
             playerColors = data.playerColors || playerNames.map(() => generatePastelColor());
             dealerIndex = data.dealerIndex ?? 0;
+            rules = { ...rules, ...(data.rules || {}) };
+            forgivenPlayers = data.forgivenPlayers || [];
           } else {
             playerColors = playerNames.map(() => generatePastelColor());
           }
@@ -61,6 +70,13 @@ if (typeof module !== "undefined") {
             for (let i = playerColors.length; i < playerNames.length; i++) {
               playerColors.push(generatePastelColor());
             }
+          }
+          if (forgivenPlayers.length < playerNames.length) {
+            for (let i = forgivenPlayers.length; i < playerNames.length; i++) {
+              forgivenPlayers.push(false);
+            }
+          } else if (forgivenPlayers.length > playerNames.length) {
+            forgivenPlayers = forgivenPlayers.slice(0, playerNames.length);
           }
           if (dealerIndex >= playerNames.length) {
             dealerIndex = 0;
@@ -86,6 +102,8 @@ if (typeof module !== "undefined") {
               winnerIndex,
               playerColors,
               dealerIndex,
+              rules,
+              forgivenPlayers,
             })
           );
         } catch (e) {
@@ -187,19 +205,32 @@ if (typeof module !== "undefined") {
               sum += val;
             }
           }
+          if (rules.forgiveHundred) {
+            if (!forgivenPlayers[i] && sum === 100) {
+              forgivenPlayers[i] = true;
+              showNotif(
+                `${escapeHtml(playerNames[i])} perdona los 100 y vuelve a 50`,
+                "bg-yellow-600"
+              );
+              sum -= 50;
+              debouncedSave();
+            } else if (forgivenPlayers[i]) {
+              sum -= 50;
+            }
+          }
           return sum;
         });
       }
 
       function getProgress(i, totals = getTotals()) {
-        return Math.min(1, (totals[i] || 0) / 100);
+        return Math.min(1, (totals[i] || 0) / rules.threshold);
       }
 
-      // Jugadores que pueden seguir: no superaron 100 y no están enganchados
+      // Jugadores que pueden seguir: no superaron el umbral y no están enganchados
       function getJugadoresVivos() {
         const totals = getTotals();
         return playerNames
-          .map((_, i) => (totals[i] <= 100 ? i : null))
+          .map((_, i) => (totals[i] <= rules.threshold ? i : null))
           .filter((i) => i !== null);
       }
 
@@ -214,7 +245,7 @@ if (typeof module !== "undefined") {
         for (let j = 0; j < getPlayerCount(); j++) {
           const val = roundsArr[rowIdx][j];
           if (val !== "" && val !== undefined) continue;
-          if (totals[j] > 100) {
+          if (totals[j] > rules.threshold) {
             const last = getLastRoundPlayed(j);
             if (rowIdx >= last + 1) continue;
           }
@@ -278,7 +309,7 @@ if (typeof module !== "undefined") {
         const totals = getTotals();
         const lastRound = getLastRoundPlayed(i);
 
-        const isBusted = totals[i] > 100; // está pasado
+        const isBusted = totals[i] > rules.threshold; // está pasado
         const hasPlayed = lastRound !== -1; // ya jugó
         const nextRound = currentRound === lastRound + 1; // ronda siguiente
         const notEngaged = !isManualEnganchado(i); // no está enganchado manualmente
@@ -299,15 +330,15 @@ if (typeof module !== "undefined") {
 
       function isPlayerDisabled(i, currentRound = getCurrentRoundIndex()) {
         const totals = getTotals();
-        const isBusted = totals[i] > 100;
+        const isBusted = totals[i] > rules.threshold;
 
         if (gameOver) return true; // partida terminada
-        if (!isBusted) return false; // no superó los 100
+        if (!isBusted) return false; // no superó el umbral
 
-        // superó 100 y está enganchado: se mantiene bloqueado
+        // superó el umbral y está enganchado: se mantiene bloqueado
         if (isManualEnganchado(i)) return true;
 
-        // superó 100: se bloquea si ya no puede engancharse
+        // superó el umbral: se bloquea si ya no puede engancharse
         return !shouldShowEnganchar(i, currentRound);
       }
 
@@ -641,6 +672,16 @@ if (typeof module !== "undefined") {
         }
       }
 
+      function renderRulesSummary() {
+        const el = document.getElementById("rulesSummary");
+        if (!el) return;
+        const parts = [`Umbral ${rules.threshold}`];
+        if (rules.forgiveHundred) parts.push("Perdonar 100");
+        if (rules.wildcard) parts.push("Comodín");
+        if (rules.extraDecks) parts.push("Mazos extra");
+        el.textContent = "Reglas: " + parts.join(", ");
+      }
+
       // --- UX ---
       let roundAddedInThisFocus = false;
       function addRoundOnIntent(col) {
@@ -677,7 +718,7 @@ if (typeof module !== "undefined") {
         renderTotalRow();
         const currentRound = getCurrentRoundIndex();
         const totals = getTotals();
-        if (totals[playerIdx] > 100 && !shouldShowEnganchar(playerIdx, currentRound)) {
+        if (totals[playerIdx] > rules.threshold && !shouldShowEnganchar(playerIdx, currentRound)) {
           renderTable();
         } else if (currentRound !== prevRound) {
           renderTable();
@@ -691,6 +732,7 @@ if (typeof module !== "undefined") {
         playerNames.push(`Jugador ${playerNames.length + 1}`);
         playerColors.push(generatePastelColor());
         roundsArr.forEach((ronda) => ronda.push(""));
+        forgivenPlayers.push(false);
         lastDealerRound = getCurrentRoundIndex() - 1;
         renderHeader();
         renderTable();
@@ -728,6 +770,7 @@ if (typeof module !== "undefined") {
         confirmAction("¿Eliminar este jugador?", () => {
           playerNames.splice(index, 1);
           playerColors.splice(index, 1);
+          forgivenPlayers.splice(index, 1);
           if (index < dealerIndex) {
             dealerIndex--;
           }
@@ -764,6 +807,48 @@ if (typeof module !== "undefined") {
           showNotif("Ronda eliminada", "bg-red-600");
           saveNow();
         });
+      }
+
+      function openRulesModal() {
+        const modal = document.getElementById("rulesModal");
+        if (!modal) return;
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        const thRadio = modal.querySelector(
+          `input[name='elimThreshold'][value='${rules.threshold}']`
+        );
+        if (thRadio) thRadio.checked = true;
+        const forgive = modal.querySelector("#forgive100Switch");
+        if (forgive) forgive.checked = rules.forgiveHundred;
+        const wild = modal.querySelector("#wildcardSwitch");
+        if (wild) wild.checked = rules.wildcard;
+        const extra = modal.querySelector("#extraDecksSwitch");
+        if (extra) extra.checked = rules.extraDecks;
+      }
+
+      function closeRulesModal() {
+        const modal = document.getElementById("rulesModal");
+        if (!modal) return;
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      function saveRules() {
+        const modal = document.getElementById("rulesModal");
+        if (!modal) return;
+        const selected = modal.querySelector(
+          "input[name='elimThreshold']:checked"
+        );
+        if (selected) rules.threshold = parseInt(selected.value, 10);
+        rules.forgiveHundred = modal.querySelector("#forgive100Switch").checked;
+        rules.wildcard = modal.querySelector("#wildcardSwitch").checked;
+        rules.extraDecks = modal.querySelector("#extraDecksSwitch").checked;
+        closeRulesModal();
+        renderRulesSummary();
+        renderTable();
+        updateAllTotals();
+        checkGameEnd();
+        saveNow();
       }
 
       function updateTotal(playerIdx) {
@@ -809,6 +894,7 @@ if (typeof module !== "undefined") {
           enganches = [];
           dealerIndex = 0;
           lastDealerRound = -1;
+          forgivenPlayers = playerNames.map(() => false);
           renderHeader();
           renderTable();
           updateAllTotals();
@@ -906,11 +992,11 @@ if (typeof module !== "undefined") {
           let totals = getTotals();
           let loserIdx = null,
             winnerIdx_ = null;
-          if (totals[0] >= 100 && totals[1] < 100) {
+          if (totals[0] >= rules.threshold && totals[1] < rules.threshold) {
             loserIdx = 0;
             winnerIdx_ = 1;
           }
-          if (totals[1] >= 100 && totals[0] < 100) {
+          if (totals[1] >= rules.threshold && totals[0] < rules.threshold) {
             loserIdx = 1;
             winnerIdx_ = 0;
           }
@@ -1041,15 +1127,21 @@ if (typeof module !== "undefined") {
         lastDealerRound = getCurrentRoundIndex() - 1;
         renderHeader();
         renderTable();
+        renderRulesSummary();
         document
           .getElementById("addPlayerBtn")
           .addEventListener("click", addPlayer);
         document
           .getElementById("resetScoresBtn")
           .addEventListener("click", resetScores);
+        const rulesBtn = document.getElementById("rulesBtn");
+        if (rulesBtn) rulesBtn.addEventListener("click", openRulesModal);
         document
-          .getElementById("nextDealerBtn")
-          .addEventListener("click", nextDealer);
+          .getElementById("closeRulesBtn")
+          .addEventListener("click", closeRulesModal);
+        document
+          .getElementById("saveRulesBtn")
+          .addEventListener("click", saveRules);
 
         let deferredPrompt;
         window.addEventListener("beforeinstallprompt", (e) => {

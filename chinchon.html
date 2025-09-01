@@ -18,6 +18,7 @@
     <div id="pozoTotal" class="mb-2 pozo-badge text-green-700 font-semibold">
       Pozo: $0
     </div>
+    <div id="rulesSummary" class="mb-2 text-blue-700 text-sm"></div>
     <div class="flex flex-wrap gap-2 mb-3 w-full justify-center">
       <button
         id="addPlayerBtn"
@@ -32,6 +33,13 @@
         aria-label="Reiniciar puntajes"
       >
         Reiniciar Puntajes
+      </button>
+      <button
+        id="rulesBtn"
+        class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition"
+        aria-label="Configurar reglas"
+      >
+        Reglas
       </button>
       <button
         id="installBtn"
@@ -57,6 +65,59 @@
           </tr>
         </tfoot>
       </table>
+    </div>
+    <div
+      id="rulesModal"
+      class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center"
+    >
+      <div class="bg-white rounded p-4 w-80">
+        <h2 class="text-lg font-bold mb-2">Reglas</h2>
+        <div class="mb-3">
+          <label class="font-semibold block">Umbral de eliminación</label>
+          <div class="flex gap-2 mt-1">
+            <label class="flex items-center gap-1"
+              ><input type="radio" name="elimThreshold" value="100" />100</label
+            >
+            <label class="flex items-center gap-1"
+              ><input type="radio" name="elimThreshold" value="150" />150</label
+            >
+            <label class="flex items-center gap-1"
+              ><input type="radio" name="elimThreshold" value="200" />200</label
+            >
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="flex items-center gap-2"
+            ><input type="checkbox" id="forgive100Switch" />Perdonar los
+            100</label
+          >
+        </div>
+        <div class="mb-2">
+          <label class="flex items-center gap-2"
+            ><input type="checkbox" id="wildcardSwitch" />Activar comodín</label
+          >
+        </div>
+        <div class="mb-4">
+          <label class="flex items-center gap-2"
+            ><input type="checkbox" id="extraDecksSwitch" />Mazos
+            adicionales</label
+          >
+        </div>
+        <div class="flex justify-end gap-2">
+          <button
+            id="closeRulesBtn"
+            class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
+          >
+            Cerrar
+          </button>
+          <button
+            id="saveRulesBtn"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+          >
+            Guardar
+          </button>
+        </div>
+      </div>
     </div>
     <script src="app.js"></script>
     <div id="totalStickyBar" style="display: none"></div>
