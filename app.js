@@ -281,8 +281,14 @@
           input.addEventListener("input", (e) =>
             handleInput(rowIdx, colIdx, e.target.value)
           );
-          input.addEventListener("focus", handleInputFocusBlur);
-          input.addEventListener("blur", handleInputBlur);
+          input.addEventListener("focus", () => {
+            handleInputFocusBlur();
+            highlightRowCol(rowIdx, colIdx);
+          });
+          input.addEventListener("blur", () => {
+            handleInputBlur();
+            unhighlightRowCol(rowIdx, colIdx);
+          });
           td.appendChild(input);
           return td;
         }
@@ -470,7 +476,7 @@
         for (let i = 0; i < getPlayerCount(); i++) {
           let puedeEnganchar = shouldShowEnganchar(i);
           const textColor = getContrastColor(playerColors[i]);
-          tfootRow.innerHTML += `<td class="px-2 py-2 font-semibold ${
+          tfootRow.innerHTML += `<td data-col="${i}" class="px-2 py-2 font-semibold ${
             isManualEnganchado(i) ? "enganchado" : ""
           }" style="background-color:${playerColors[i]};color:${textColor};">
         <span>${totals[i]}</span>
@@ -768,6 +774,24 @@
             "</tfoot></table>";
           attachEngancharEvents(stickyBar);
         }
+      }
+
+      function highlightRowCol(rowIdx, colIdx) {
+        const row = document.querySelector(`tr[data-row='${rowIdx}']`);
+        if (row) row.classList.add("highlight-row");
+        document
+          .querySelectorAll(`td[data-col='${colIdx}']`)
+          .forEach((td) => td.classList.add("highlight-col"));
+        syncStickyTotals();
+      }
+
+      function unhighlightRowCol(rowIdx, colIdx) {
+        const row = document.querySelector(`tr[data-row='${rowIdx}']`);
+        if (row) row.classList.remove("highlight-row");
+        document
+          .querySelectorAll(`td[data-col='${colIdx}']`)
+          .forEach((td) => td.classList.remove("highlight-col"));
+        syncStickyTotals();
       }
 
       // Sticky total (móvil)
