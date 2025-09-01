@@ -48,9 +48,6 @@ Por otro lado, un jugador queda inhabilitado para seguir cargando rondas cuando:
 - Se enganchó manualmente y continúa con más de 100 puntos.
 - O bien superó los 100 puntos y ya no tiene posibilidad de engancharse.
 
-El código puede hacerse más claro agrupando estas verificaciones en variables
-auxiliares y utilizando retornos tempranos.
-
 ## Otras características
 
 - **Modo instalable / offline:** gracias a `manifest.json` y `sw.js`, la app se
