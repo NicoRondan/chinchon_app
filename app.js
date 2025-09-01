@@ -9,6 +9,7 @@
       let gameOver = false;
       let winnerIndex = null;
       let enganches = []; // { idx, round, ref, total }
+      let playerColors = [];
       let saveTimeout;
 
       const isManualEnganchado = (idx) =>
@@ -17,14 +18,23 @@
       function loadFromLS() {
         try {
           const raw = localStorage.getItem(LS_KEY);
-          if (!raw) return;
-          const data = JSON.parse(raw);
-          playerNames = data.playerNames || playerNames;
-          roundsArr = data.roundsArr || roundsArr;
-          manualEnganches = data.manualEnganches || [];
-          gameOver = data.gameOver || false;
-          winnerIndex = data.winnerIndex ?? null;
-          enganches = data.enganches || [];
+          if (raw) {
+            const data = JSON.parse(raw);
+            playerNames = data.playerNames || playerNames;
+            roundsArr = data.roundsArr || roundsArr;
+            manualEnganches = data.manualEnganches || [];
+            gameOver = data.gameOver || false;
+            winnerIndex = data.winnerIndex ?? null;
+            enganches = data.enganches || [];
+            playerColors = data.playerColors || playerNames.map(() => generatePastelColor());
+          } else {
+            playerColors = playerNames.map(() => generatePastelColor());
+          }
+          if (playerColors.length < playerNames.length) {
+            for (let i = playerColors.length; i < playerNames.length; i++) {
+              playerColors.push(generatePastelColor());
+            }
+          }
         } catch (e) {
           console.error("loadFromLS error", e);
           showNotif(
@@ -44,6 +54,7 @@
               enganches,
               gameOver,
               winnerIndex,
+              playerColors,
             })
           );
         } catch (e) {
@@ -85,6 +96,22 @@
           };
           return chars[tag] || tag;
         });
+      }
+
+      function generatePastelColor() {
+        const hue = Math.floor(Math.random() * 360);
+        const saturation = 60;
+        const lightness = 85;
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      }
+
+      function getContrastColor(hsl) {
+        const match = hsl.match(/\d+/g);
+        if (match && match.length >= 3) {
+          const l = parseInt(match[2], 10);
+          return l > 70 ? "#000" : "#fff";
+        }
+        return "#000";
       }
 
       function getPlayerCount() {
@@ -129,10 +156,11 @@
         headerRow.innerHTML =
           '<th scope="col" class="px-2 py-2 bg-blue-600 text-white">Ronda</th>';
         playerNames.forEach((name, i) => {
+          const textColor = getContrastColor(playerColors[i]);
           headerRow.innerHTML += `
-          <th scope="col" class="bg-blue-600 text-white px-2 py-2 group whitespace-nowrap ${
+          <th scope="col" class="px-2 py-2 group whitespace-nowrap ${
             isManualEnganchado(i) ? "enganchado" : ""
-          }">
+          }" style="background-color:${playerColors[i]};color:${textColor};">
             <div class="flex items-center gap-1 justify-center">
               <span class="editable cursor-pointer hover:underline" data-idx="${i}">${escapeHtml(
             name
@@ -441,9 +469,10 @@
         tfootRow.innerHTML = `<td class="px-2 py-2 text-blue-900">Total</td>`;
         for (let i = 0; i < getPlayerCount(); i++) {
           let puedeEnganchar = shouldShowEnganchar(i);
-          tfootRow.innerHTML += `<td class="px-2 py-2 text-blue-900 font-semibold ${
+          const textColor = getContrastColor(playerColors[i]);
+          tfootRow.innerHTML += `<td class="px-2 py-2 font-semibold ${
             isManualEnganchado(i) ? "enganchado" : ""
-          }">
+          }" style="background-color:${playerColors[i]};color:${textColor};">
         <span>${totals[i]}</span>
         ${
           puedeEnganchar
@@ -513,6 +542,7 @@
       function addPlayer() {
         if (gameOver) return;
         playerNames.push(`Jugador ${playerNames.length + 1}`);
+        playerColors.push(generatePastelColor());
         roundsArr.forEach((ronda) => ronda.push(""));
         renderHeader();
         renderTable();
@@ -527,6 +557,7 @@
           return;
         }
         playerNames.splice(index, 1);
+        playerColors.splice(index, 1);
         manualEnganches = manualEnganches
           .filter((e) => e.idx !== index)
           .map((e) => ({ ...e, idx: e.idx > index ? e.idx - 1 : e.idx }));
