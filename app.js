@@ -424,6 +424,7 @@ if (typeof module !== "undefined") {
             if (btn) btn.dataset.idx = i;
 
             if (!cellRefs[i]) cellRefs[i] = [];
+            const fragment = document.createDocumentFragment();
             for (let j = 0; j < playerCount; j++) {
               const value = round[j] !== undefined ? round[j] : "";
               const disabled =
@@ -431,7 +432,7 @@ if (typeof module !== "undefined") {
               let td = cellRefs[i][j];
               if (!td) {
                 td = createInputCell(i, j, value, disabled);
-                tr.appendChild(td);
+                fragment.appendChild(td);
                 cellRefs[i][j] = td;
               } else {
                 const input = td.firstElementChild;
@@ -441,6 +442,9 @@ if (typeof module !== "undefined") {
                 input.dataset.row = i;
                 input.dataset.col = j;
               }
+            }
+            if (fragment.childNodes.length) {
+              tr.appendChild(fragment);
             }
             const excessCells = tr.children.length - (playerCount + 1);
             for (let k = 0; k < excessCells; k++) {
