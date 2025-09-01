@@ -122,6 +122,16 @@
         return "#000";
       }
 
+      function shadeHsl(hsl, delta) {
+        const match = hsl.match(/\d+/g);
+        if (match && match.length >= 3) {
+          let l = parseInt(match[2], 10) + delta;
+          l = Math.max(0, Math.min(100, l));
+          return `hsl(${match[0]}, ${match[1]}%, ${l}%)`;
+        }
+        return hsl;
+      }
+
       function getPlayerCount() {
         return playerNames.length;
       }
@@ -148,6 +158,10 @@
           }
           return sum;
         });
+      }
+
+      function getProgress(i, totals = getTotals()) {
+        return Math.min(1, (totals[i] || 0) / 100);
       }
 
       // Jugadores que pueden seguir: no superaron 100 y no están enganchados
@@ -484,16 +498,26 @@
         for (let i = 0; i < getPlayerCount(); i++) {
           let puedeEnganchar = shouldShowEnganchar(i);
           const textColor = getContrastColor(playerColors[i]);
+          const progress = getProgress(i, totals);
+          const barBg = shadeHsl(playerColors[i], 20);
+          const barFill = shadeHsl(playerColors[i], -10);
           tfootRow.innerHTML += `<td data-col="${i}" class="px-2 py-2 font-semibold ${
             isManualEnganchado(i) ? "enganchado" : ""
           }" style="background-color:${playerColors[i]};color:${textColor};">
+      <div class="flex items-center gap-1">
         <span>${totals[i]}</span>
         ${
           puedeEnganchar
-            ? `<button class="enganchar-btn ml-2 px-2 py-1 bg-yellow-500 text-white text-xs rounded animate-fadein" data-idx="${i}" aria-label="Enganchar a ${escapeHtml(playerNames[i])}">Enganchar</button>`
+            ? `<button class="enganchar-btn ml-2 px-2 py-1 bg-yellow-500 text-white text-xs rounded animate-fadein" data-idx="${i}" aria-label="Enganchar a ${escapeHtml(
+                playerNames[i]
+              )}">Enganchar</button>`
             : ""
         }
-      </td>`;
+      </div>
+      <div class="progress-bg" style="background-color:${barBg};">
+        <div class="progress-fill" style="width:${progress * 100}%;background-color:${barFill};"></div>
+      </div>
+    </td>`;
         }
         attachEngancharEvents();
         updateAllTotals();
@@ -610,6 +634,10 @@
           `#totalRow td:nth-child(${playerIdx + 2}) span`
         );
         if (el) el.textContent = totals[playerIdx];
+        const fill = document.querySelector(
+          `#totalRow td:nth-child(${playerIdx + 2}) .progress-fill`
+        );
+        if (fill) fill.style.width = `${getProgress(playerIdx, totals) * 100}%`;
         syncStickyTotals();
       }
 
@@ -617,6 +645,16 @@
         document.getElementById("pozoTotal").textContent =
           "Pozo: $" + calcularPozo();
         lastTotals = getTotals();
+        lastTotals.forEach((t, i) => {
+          const el = document.querySelector(
+            `#totalRow td:nth-child(${i + 2}) span`
+          );
+          if (el) el.textContent = t;
+          const fill = document.querySelector(
+            `#totalRow td:nth-child(${i + 2}) .progress-fill`
+          );
+          if (fill) fill.style.width = `${getProgress(i, lastTotals) * 100}%`;
+        });
         syncStickyTotals();
         saveNow();
       }
