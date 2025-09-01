@@ -11,6 +11,7 @@
       let enganches = []; // { idx, round, ref, total }
       let playerColors = [];
       let saveTimeout;
+      let dealerIndex = 0;
 
       const isManualEnganchado = (idx) =>
         manualEnganches.some((e) => e.idx === idx);
@@ -27,6 +28,7 @@
             winnerIndex = data.winnerIndex ?? null;
             enganches = data.enganches || [];
             playerColors = data.playerColors || playerNames.map(() => generatePastelColor());
+            dealerIndex = data.dealerIndex ?? 0;
           } else {
             playerColors = playerNames.map(() => generatePastelColor());
           }
@@ -34,6 +36,9 @@
             for (let i = playerColors.length; i < playerNames.length; i++) {
               playerColors.push(generatePastelColor());
             }
+          }
+          if (dealerIndex >= playerNames.length) {
+            dealerIndex = 0;
           }
         } catch (e) {
           console.error("loadFromLS error", e);
@@ -55,6 +60,7 @@
               gameOver,
               winnerIndex,
               playerColors,
+              dealerIndex,
             })
           );
         } catch (e) {
@@ -184,6 +190,7 @@
             isManualEnganchado(i) ? "enganchado" : ""
           }" style="background-color:${playerColors[i]};color:${textColor};">
             <div class="flex items-center gap-1 justify-center">
+              ${i === dealerIndex ? '<span title="Reparte" class="dealer-icon text-lg">🂠</span>' : ''}
               <span class="editable cursor-pointer hover:underline" data-idx="${i}">${escapeHtml(
             name
           )}</span>
@@ -589,6 +596,13 @@
         saveNow();
       }
 
+      function nextDealer() {
+        if (getPlayerCount() === 0) return;
+        dealerIndex = (dealerIndex + 1) % getPlayerCount();
+        renderHeader();
+        saveNow();
+      }
+
       function removePlayer(index) {
         if (getPlayerCount() <= 1) {
           showNotif("Debe haber al menos un jugador", "bg-red-700");
@@ -597,6 +611,12 @@
         confirmAction("¿Eliminar este jugador?", () => {
           playerNames.splice(index, 1);
           playerColors.splice(index, 1);
+          if (index < dealerIndex) {
+            dealerIndex--;
+          }
+          if (dealerIndex >= playerNames.length) {
+            dealerIndex = 0;
+          }
           manualEnganches = manualEnganches
             .filter((e) => e.idx !== index)
             .map((e) => ({ ...e, idx: e.idx > index ? e.idx - 1 : e.idx }));
@@ -668,6 +688,7 @@
           gameOver = false;
           winnerIndex = null;
           enganches = [];
+          dealerIndex = 0;
           renderHeader();
           renderTable();
           updateAllTotals();
@@ -915,6 +936,7 @@
       renderTable();
       document.getElementById("addPlayerBtn").addEventListener("click", addPlayer);
       document.getElementById("resetScoresBtn").addEventListener("click", resetScores);
+      document.getElementById("nextDealerBtn").addEventListener("click", nextDealer);
 
       let deferredPrompt;
       window.addEventListener("beforeinstallprompt", (e) => {
