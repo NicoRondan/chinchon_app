@@ -30,3 +30,26 @@ node benchmark.js
 
 Puedes ajustar los valores de `players`, `rounds` y `updates` dentro del script
 para probar diferentes escenarios.
+
+## Reenganche y deshabilitación de jugadores
+
+La aplicación permite que un jugador se "enganche" nuevamente luego de superar
+los 100 puntos. El botón de reenganche se muestra únicamente cuando se cumplen
+simultáneamente las siguientes condiciones:
+
+- La partida sigue en curso y quedan al menos tres jugadores activos.
+- El jugador superó los 100 puntos y ya disputó al menos una ronda.
+- Se encuentra en la ronda siguiente a la última que jugó.
+- Todavía no se enganchó manualmente.
+
+Por otro lado, un jugador queda inhabilitado para seguir cargando rondas cuando:
+
+- La partida terminó.
+- Se enganchó manualmente y continúa con más de 100 puntos.
+- O bien superó los 100 puntos y ya no tiene posibilidad de engancharse.
+
+## Otras características
+
+- **Modo instalable / offline:** gracias a `manifest.json` y `sw.js`, la app se
+  comporta como una Progressive Web App. Puedes instalarla en tu dispositivo y
+  seguirá funcionando sin conexión utilizando el caché del navegador.
