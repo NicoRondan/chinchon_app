@@ -85,6 +85,14 @@
         notif.appendChild(div);
         setTimeout(() => (notif.innerHTML = ""), 1100);
       }
+
+      function confirmAction(message, onConfirm) {
+        if (confirm(message)) {
+          onConfirm();
+        } else {
+          showNotif("Acción cancelada", "bg-gray-600");
+        }
+      }
       function escapeHtml(str) {
         return str.replace(/[&<>\"']/g, function (tag) {
           const chars = {
@@ -562,33 +570,37 @@
           showNotif("Debe haber al menos un jugador", "bg-red-700");
           return;
         }
-        playerNames.splice(index, 1);
-        playerColors.splice(index, 1);
-        manualEnganches = manualEnganches
-          .filter((e) => e.idx !== index)
-          .map((e) => ({ ...e, idx: e.idx > index ? e.idx - 1 : e.idx }));
-        roundsArr.forEach((ronda) => ronda.splice(index, 1));
-        renderHeader();
-        renderTable();
-        updateAllTotals();
-        showNotif("Jugador eliminado", "bg-red-600");
-        saveNow();
+        confirmAction("¿Eliminar este jugador?", () => {
+          playerNames.splice(index, 1);
+          playerColors.splice(index, 1);
+          manualEnganches = manualEnganches
+            .filter((e) => e.idx !== index)
+            .map((e) => ({ ...e, idx: e.idx > index ? e.idx - 1 : e.idx }));
+          roundsArr.forEach((ronda) => ronda.splice(index, 1));
+          renderHeader();
+          renderTable();
+          updateAllTotals();
+          showNotif("Jugador eliminado", "bg-red-600");
+          saveNow();
+        });
       }
       function removeRound(idx) {
         if (roundsArr.length <= 1) {
           showNotif("Debe haber al menos una ronda", "bg-red-700");
           return;
         }
-        roundsArr.splice(idx, 1);
-        manualEnganches = manualEnganches
-          .filter((e) => e.round !== idx)
-          .map((e) => ({ ...e, round: e.round > idx ? e.round - 1 : e.round }));
-        enganches = enganches
-          .filter((e) => e.round !== idx)
-          .map((e) => ({ ...e, round: e.round > idx ? e.round - 1 : e.round }));
-        renderTable();
-        showNotif("Ronda eliminada", "bg-red-600");
-        saveNow();
+        confirmAction("¿Eliminar esta ronda?", () => {
+          roundsArr.splice(idx, 1);
+          manualEnganches = manualEnganches
+            .filter((e) => e.round !== idx)
+            .map((e) => ({ ...e, round: e.round > idx ? e.round - 1 : e.round }));
+          enganches = enganches
+            .filter((e) => e.round !== idx)
+            .map((e) => ({ ...e, round: e.round > idx ? e.round - 1 : e.round }));
+          renderTable();
+          showNotif("Ronda eliminada", "bg-red-600");
+          saveNow();
+        });
       }
 
       function updateTotal(playerIdx) {
@@ -610,18 +622,20 @@
       }
 
       function resetScores() {
-        roundsArr.forEach((ronda) => {
-          for (let i = 0; i < getPlayerCount(); i++) ronda[i] = "";
+        confirmAction("¿Reiniciar todos los puntajes?", () => {
+          roundsArr.forEach((ronda) => {
+            for (let i = 0; i < getPlayerCount(); i++) ronda[i] = "";
+          });
+          manualEnganches = [];
+          gameOver = false;
+          winnerIndex = null;
+          enganches = [];
+          renderHeader();
+          renderTable();
+          updateAllTotals();
+          showNotif("Puntajes reiniciados", "bg-gray-600");
+          saveNow();
         });
-        manualEnganches = [];
-        gameOver = false;
-        winnerIndex = null;
-        enganches = [];
-        renderHeader();
-        renderTable();
-        updateAllTotals();
-        showNotif("Puntajes reiniciados", "bg-gray-600");
-        saveNow();
       }
 
       function editPlayerName(idx) {
