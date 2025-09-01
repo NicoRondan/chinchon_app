@@ -809,7 +809,9 @@
       function handleEnganchar(idx) {
         if (gameOver) return;
         const totals = getTotals();
-        const vivos = getJugadoresVivos().filter((i) => i !== idx);
+        const vivos = getJugadoresVivos().filter(
+          (i) => i !== idx && !isManualEnganchado(i)
+        );
 
         if (vivos.length === 0) {
           showNotif("No hay jugadores a los que enganchar.", "bg-red-700");
