@@ -638,8 +638,13 @@
       }
 
       function nextDealer() {
-        if (getPlayerCount() === 0) return;
-        dealerIndex = (dealerIndex + 1) % getPlayerCount();
+        const vivos = getJugadoresVivos();
+        if (vivos.length === 0) return;
+        let next = vivos.find((i) => i > dealerIndex);
+        if (next === undefined) {
+          next = vivos[0];
+        }
+        dealerIndex = next;
         renderHeader();
         saveNow();
       }
@@ -986,6 +991,10 @@
 
       // Inicializar desde LS o default
       loadFromLS();
+      const vivosInit = getJugadoresVivos();
+      if (vivosInit.length && !vivosInit.includes(dealerIndex)) {
+        dealerIndex = vivosInit[0];
+      }
       lastDealerRound = getCurrentRoundIndex() - 1;
       renderHeader();
       renderTable();
