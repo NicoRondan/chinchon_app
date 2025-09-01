@@ -88,5 +88,10 @@
     </div>
     <script src="app.js"></script>
     <div id="totalStickyBar" style="display: none"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    </script>
   </body>
 </html>
