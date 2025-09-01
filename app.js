@@ -441,17 +441,31 @@ if (typeof module !== "undefined") {
                 input.dataset.col = j;
               }
             }
-            for (let j = playerCount; j < cellRefs[i].length; j++) {
-              const td = cellRefs[i][j];
-              if (td && td.parentNode === tr) tr.removeChild(td);
+            const excessCells = tr.children.length - (playerCount + 1);
+            for (let k = 0; k < excessCells; k++) {
+              const td = tr.lastElementChild;
+              if (td) tr.removeChild(td);
+              cellRefs[i].pop();
             }
             cellRefs[i].length = playerCount;
           }
         }
-
-        for (let i = roundsArr.length; i < rowRefs.length; i++) {
-          const tr = rowRefs[i];
-          if (tr && tr.parentNode === tbody) tbody.removeChild(tr);
+        let existingRows =
+          tbody.children.length -
+          (addRowRef && tbody.contains(addRowRef) ? 1 : 0);
+        let extraRows = existingRows - roundsArr.length;
+        while (extraRows > 0) {
+          const tr = tbody.lastElementChild;
+          if (tr === addRowRef) {
+            tbody.removeChild(tr);
+            addRowRef = null;
+            addRowInputs = [];
+          } else {
+            tbody.removeChild(tr);
+            rowRefs.pop();
+            cellRefs.pop();
+            extraRows--;
+          }
         }
         rowRefs.length = roundsArr.length;
         cellRefs.length = roundsArr.length;
