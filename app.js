@@ -608,15 +608,16 @@
       }
 
       function handleInput(rondaIdx, playerIdx, value) {
+        const prevRound = getCurrentRoundIndex();
         roundsArr[rondaIdx][playerIdx] = value ? +value || 0 : "";
         checkGameEnd();
         updateTotal(playerIdx);
         renderTotalRow();
         const currentRound = getCurrentRoundIndex();
-        if (
-          getTotals()[playerIdx] > 100 &&
-          !shouldShowEnganchar(playerIdx, currentRound)
-        ) {
+        const totals = getTotals();
+        if (totals[playerIdx] > 100 && !shouldShowEnganchar(playerIdx, currentRound)) {
+          renderTable();
+        } else if (currentRound !== prevRound) {
           renderTable();
         }
         checkDealerRotation();
